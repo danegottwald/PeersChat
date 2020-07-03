@@ -18,8 +18,8 @@ static int patestCallback(const void* input,
   float* out = (float*) output;
   SIZE += framesPerBuffer;
   memcpy(out, in, framesPerBuffer * 4);
-	for(unsigned int i = 0; i < framesPerBuffer; ++i)
-		out[i] *= VOLUME_MULTIPLIER;
+  for(unsigned int i = 0; i < framesPerBuffer; ++i)
+    out[i] *= VOLUME_MULTIPLIER;
   return 0;
 }
 
