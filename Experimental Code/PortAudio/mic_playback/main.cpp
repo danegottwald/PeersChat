@@ -3,6 +3,8 @@
 #include <cstring>
 
 #define NUM_SECONDS 20
+#define VOLUME_MULTIPLIER 0.75 //75% volume
+
 long long SIZE = 0;
 
 static int patestCallback(const void* input,
@@ -16,6 +18,8 @@ static int patestCallback(const void* input,
   float* out = (float*) output;
   SIZE += framesPerBuffer;
   memcpy(out, in, framesPerBuffer * 4);
+	for(unsigned int i = 0; i < framesPerBuffer; ++i)
+		out[i] *= VOLUME_MULTIPLIER;
   return 0;
 }
 
