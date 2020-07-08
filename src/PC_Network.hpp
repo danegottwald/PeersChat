@@ -50,7 +50,7 @@
  */
 struct AudioPacket
 {
-	uint64_t packet_id;
+	uint32_t packet_id;
 	uint16_t packet_len;
 	std::unique_ptr<uint8_t> packet;
 
