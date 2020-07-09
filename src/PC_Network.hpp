@@ -36,16 +36,17 @@
 
 // Universal Includes
 #include <cstdint>
-#include <queue>
 #include <vector>
+#include <queue>
 #include <functional>
 #include <memory>
+#include <mutex>
 
 
 
 
 // Audio Packet Struct ---------------------------------------------------------
-/* AudioPacket: A struct that contains info 
+/* AudioPacket: A struct that contains an encoded audio packet
  *
  */
 struct AudioPacket
@@ -58,6 +59,10 @@ struct AudioPacket
 	inline bool operator<(const AudioPacket &other) { return this->packet_id < other.packet_id; }
 };
 
+	// Type change for static error checking
+struct AudioInPacket  : public AudioPacket { };
+struct AudioOutPacket : public AudioPacket { };
+
 
 // NPeer Class -----------------------------------------------------------------
 /* NPeer: A class for handling networking to your peers
@@ -66,26 +71,38 @@ struct AudioPacket
  */
 class NPeer
 {
-	// Static Member
-private:
-	static int socket;
-
 	// Members
 private:
+		// UDP Socket for audio to/from everyone | TCP Socket for comms to this Peer
+	static int udp;
+	int tcp;
+		// Peer Address
 	struct sockaddr_in;
-	std::priority_queue<AudioPacket> packets;
+		// Audio in
+	std::priority_queue<std::unique_ptr<AudioInPacket>> in_packets;
+	std::mutex in_queue_lock;
+	std::queue<std::unique_ptr<AudioInPacket>> in_bucket;
+	std::mutex in_bucket_lock;
+	uint32_t in_packet_id;
+		// Audio out
+	std::queue<std::unique_ptr<AudioOutPacket>> out_packets;
+	std::mutex out_queue_lock;
+	std::queue<std::unique_ptr<AudioOutPacket>> bucket;
+	std::mutex out_bucket_lock;
+	uint32_t out_packet_id;
 
 	// Constructor
 public:
 	NPeer();
 	NPeer(char* ip, const int &PORT);
 
-	// Send
-public:
+	// Sending Audio
+	AudioOutPacket* getEmptyOutPacket();
+	void enqueue_out(AudioOutPacket* packet);
 
-	// Queue Packet
-public:
-
+	// Receiving Audio
+	AudioInPacket* getEmptyInPacket();
+	void enqueue_in(AudioInPacket* packet);
 };
 
 
