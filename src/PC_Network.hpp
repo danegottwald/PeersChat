@@ -19,8 +19,9 @@
  */
 #ifdef __linux__
 
-#include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/types.h>
+#include <arpa/inet.h>
 #include <fcntl.h>
 
 #elif   _WIN32
@@ -90,7 +91,7 @@ struct AudioInPacket  : public AudioPacket { };
 struct AudioOutPacket : public AudioPacket { };
 
 	// Comparator for std::priority_queue that pops the smallest packet first
-inline bool AudioInPacket_more(const std::unique_ptr<AudioInPacket> &left, const std::unique_ptr<AudioInPacket> &right) { return !((*left) < (*right)); }
+inline bool AudioInPacket_greater(const std::unique_ptr<AudioInPacket> &left, const std::unique_ptr<AudioInPacket> &right) { return !((*left) < (*right)); }
 
 
 // NPeer Class -----------------------------------------------------------------
@@ -104,8 +105,8 @@ inline bool AudioInPacket_more(const std::unique_ptr<AudioInPacket> &left, const
  *              for data where guaranteed delivery is important... pretty much
  *              everything except for audio.
  *
- * @member sockaddr_in  Destination address for this peer's UDP socket. Audio
- *                      data sent over @udp will be sent to this address.
+ * @member udp_dest  Destination address for this peer's UDP socket. Audio
+ *                   data sent over @udp will be sent to this address.
  *
  * @member in_packets  Priority queue of type @AudioInPacket ordered by
  *                     @packet_id such that popping off an element will get you
@@ -172,7 +173,7 @@ private:
 	static int udp;
 	int tcp;
 		// Peer Address
-	struct sockaddr_in;
+	sockaddr_in udp_dest;
 		// Audio in
 	std::priority_queue<std::unique_ptr<AudioInPacket>,
 	                    std::vector<std::unique_ptr<AudioInPacket>>,
@@ -191,7 +192,7 @@ private:
 	// Constructor
 public:
 	NPeer();
-	NPeer(char* ip, const int &port);
+	NPeer(const char* ip, const uint16_t &port);
 
 	// Sending Audio
 	AudioOutPacket* getEmptyOutPacket();
