@@ -23,12 +23,12 @@ PC_AudioHandler::PC_AudioHandler() {
 	Pa_ErrorCheck("Failed to initialize portaudio", portaudioError, true);
 	portaudioVersion = Pa_GetVersionText();
 	portaudioError = Pa_OpenDefaultStream(&stream, 1,
-                                          1,
-                                          paFloat32,
-                                          SAMPLE_RATE,
-                                          FRAME_SIZE,
-                                          Pa_Callback,
-                                          nullptr);
+	                                      1,
+	                                      paFloat32,
+	                                      SAMPLE_RATE,
+	                                      FRAME_SIZE,
+	                                      Pa_Callback,
+	                                      nullptr);
 	Pa_ErrorCheck("Failed to open audio stream", portaudioError, true);
 
 	// Check default devices

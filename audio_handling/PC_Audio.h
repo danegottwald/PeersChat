@@ -90,11 +90,11 @@ private:
 	std::string defaultInput;
 	std::string defaultOutput;
 	static int Pa_Callback(const void *input,
-                           void *output,
-                           unsigned long framesPerBuffer,
-                           const PaStreamCallbackTimeInfo *timeInfo,
-                           PaStreamCallbackFlags status_flags,
-                           void *userData);
+	                       void *output,
+	                       unsigned long framesPerBuffer,
+	                       const PaStreamCallbackTimeInfo *timeInfo,
+	                       PaStreamCallbackFlags status_flags,
+	                       void *userData);
 
 public:
 	PC_AudioHandler();
