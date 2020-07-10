@@ -36,11 +36,20 @@
 
 // Universal Includes
 #include <cstdint>
+#include <cstring>
 #include <vector>
 #include <queue>
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <exception>
+
+
+// Pre-Compiler Constants
+#define BUFFER_SIZE 4096
+
+
+// Global Variables
 
 
 
@@ -56,8 +65,11 @@
  * @member packet  A unique pointer to a buffer meant for containing an encoded
  *                 audio packet from libopus
  *
- * @constructor AudioPacket  Initializes packet to at least BUFFER_SIZE which is
- *                           always at least 4096
+ * @constructor AudioPacket()  Initializes packet to at least BUFFER_SIZE which
+ *                             is always at least 4096
+ *
+ * @constructor AudioPacket(2)  Same as @AudioPacket() but allows you to
+ *                              populate @packet and set @packet_len.
  *
  * @operator <  Less than operator overload for comparing and sorting based
  *              packet id number.
@@ -69,6 +81,7 @@ struct AudioPacket
 	std::unique_ptr<uint8_t> packet;
 
 	AudioPacket();
+	AudioPacket(uint8_t* packet, size_t packet_len);
 	inline bool operator<(const AudioPacket &other) { return this->packet_id < other.packet_id; }
 };
 
@@ -178,7 +191,7 @@ private:
 	// Constructor
 public:
 	NPeer();
-	NPeer(char* ip, const int &PORT);
+	NPeer(char* ip, const int &port);
 
 	// Sending Audio
 	AudioOutPacket* getEmptyOutPacket();
