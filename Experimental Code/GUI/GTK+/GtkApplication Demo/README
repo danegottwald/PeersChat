@@ -1,0 +1,2 @@
+Demo showing how to create and use GtkApplication for running GTK+ GUI.
+GtkApplication should be prefered over simply using windows because it handles initialization of GTK+ libraries, and makes it so code isn't all in main().  
