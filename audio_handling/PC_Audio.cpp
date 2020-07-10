@@ -21,19 +21,21 @@ PC_AudioHandler::PC_AudioHandler() {
 	// Initialize PortAudio and open an audio stream
 	portaudioError = Pa_Initialize();
 	Pa_ErrorCheck("Failed to initialize portaudio", portaudioError, true);
+	portaudioVersion = Pa_GetVersionText();
 	portaudioError = Pa_OpenDefaultStream(&stream, 1,
-			              1,
-			                              paFloat32,
-			                              SAMPLE_RATE,
-			                              FRAME_SIZE,
-			                              Pa_Callback,
-			                       nullptr);
+                                          1,
+                                          paFloat32,
+                                          SAMPLE_RATE,
+                                          FRAME_SIZE,
+                                          Pa_Callback,
+                                          nullptr);
 	Pa_ErrorCheck("Failed to open audio stream", portaudioError, true);
 
 	// Check default devices
 	defaultInput = Pa_GetDeviceInfo(Pa_GetDefaultInputDevice())->name;
 	defaultOutput = Pa_GetDeviceInfo(Pa_GetDefaultOutputDevice())->name;
 
+	opusVersion = opus_get_version_string();
 	// Create and error check encoder and decoder states
 	encoder = opus_encoder_create(SAMPLE_RATE, CHANNELS, OPUS_APPLICATION_VOIP, &opusError);
 	opus_error_check("Failed to create encoder", opusError, true);
@@ -79,11 +81,11 @@ void PC_AudioHandler::beginVoiceStream() {
  * the output. This function is called as a part of Pa_StartStream()
  */
 int PC_AudioHandler::Pa_Callback(const void *input,
-				void *output,
-				unsigned long framesPerBuffer,
-				const PaStreamCallbackTimeInfo *timeInfo,
-				PaStreamCallbackFlags status_flags,
-				void *userData)
+                                 void *output,
+                                 unsigned long framesPerBuffer,
+                                 const PaStreamCallbackTimeInfo *timeInfo,
+                                 PaStreamCallbackFlags status_flags,
+                                 void *userData)
 {
 	// Pointers to the input and output streams
 	auto *in = (float*) input;
@@ -120,6 +122,30 @@ int PC_AudioHandler::Pa_Callback(const void *input,
  */
 uint8_t PC_AudioHandler::getEncodedPacket() {
 	return reinterpret_cast<uint8_t>(encodedAudio);
+}
+
+float PC_AudioHandler::getInputVolume() {
+	return inputVolume;
+}
+
+float PC_AudioHandler::getOutputVolume() {
+	return outputVolume;
+}
+
+void PC_AudioHandler::setInputVolume(float x) {
+	inputVolume = x;
+}
+
+void PC_AudioHandler::setOutputVolume(float x) {
+	outputVolume = x;
+}
+
+std::string PC_AudioHandler::getDefaultInput() {
+	return defaultInput;
+}
+
+std::string PC_AudioHandler::getDefaultOutput() {
+	return defaultOutput;
 }
 
 /* opus_ErrorCheck()

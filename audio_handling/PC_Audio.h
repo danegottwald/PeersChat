@@ -2,8 +2,8 @@
 #define _PC_Audio_H
 
 #include <iostream>
-#include <portaudio.h>
-#include <opus.h>
+#include <portaudio.h>    // http://portaudio.com/docs/v19-doxydocs/
+#include <opus.h>         // https://opus-codec.org/docs/opus_api-1.3.1/index.html
 
 /* Constants
  * SAMPLE_RATE of input signal (Hz) Must be either 8000, 12000, 16000, 24000, or 48000
@@ -78,29 +78,40 @@ private:
 	static opus_int32 encodedFrame;
 	static opus_int32 decodedFrame;
 	static uint8_t encodedAudio[MAX_PACKET_SIZE];
+	static float inputVolume;
+	static float outputVolume;
+	std::string opusVersion;
 	int opusError{};
 
 	// PortAudio
 	PaStream *stream = nullptr;
 	PaError portaudioError{};
+	std::string portaudioVersion;
+	std::string defaultInput;
+	std::string defaultOutput;
 	static int Pa_Callback(const void *input,
-			               void *output,
-			               unsigned long framesPerBuffer,
-			               const PaStreamCallbackTimeInfo *timeInfo,
-			               PaStreamCallbackFlags status_flags,
-			               void *userData);
+                           void *output,
+                           unsigned long framesPerBuffer,
+                           const PaStreamCallbackTimeInfo *timeInfo,
+                           PaStreamCallbackFlags status_flags,
+                           void *userData);
 
 public:
 	PC_AudioHandler();
 	~PC_AudioHandler();
 
-	static float inputVolume;
-	static float outputVolume;
-	std::string defaultInput;
-	std::string defaultOutput;
-
 	void beginVoiceStream();
+
+	// Getters
 	static uint8_t getEncodedPacket();
+	std::string getDefaultInput();
+	std::string getDefaultOutput();
+	float getInputVolume();
+	float getOutputVolume();
+
+	// Setters
+	void setInputVolume(float);
+	void setOutputVolume(float);
 
 };
 
