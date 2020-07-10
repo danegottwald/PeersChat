@@ -76,6 +76,9 @@ struct AudioPacket
 struct AudioInPacket  : public AudioPacket { };
 struct AudioOutPacket : public AudioPacket { };
 
+	// Comparator for std::priority_queue that pops the smallest packet first
+inline bool AudioInPacket_more(const std::unique_ptr<AudioInPacket> &left, const std::unique_ptr<AudioInPacket> &right) { return !((*left) < (*right)); }
+
 
 // NPeer Class -----------------------------------------------------------------
 /* NPeer: A class for handling networking to your peers
@@ -158,7 +161,9 @@ private:
 		// Peer Address
 	struct sockaddr_in;
 		// Audio in
-	std::priority_queue<std::unique_ptr<AudioInPacket>> in_packets;
+	std::priority_queue<std::unique_ptr<AudioInPacket>,
+	                    std::vector<std::unique_ptr<AudioInPacket>>,
+	                    std::function<bool(std::unique_ptr<AudioInPacket>&, std::unique_ptr<AudioInPacket>&)>> in_packets;
 	std::mutex in_queue_lock;
 	std::queue<std::unique_ptr<AudioInPacket>> in_bucket;
 	std::mutex in_bucket_lock;
