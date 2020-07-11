@@ -1,5 +1,5 @@
-#ifndef _PC_Audio_H
-#define _PC_Audio_H
+#ifndef _PC_Audio_HPP
+#define _PC_Audio_HPP
 
 #include <iostream>
 #include <portaudio.h>    // http://portaudio.com/docs/v19-doxydocs/
@@ -116,5 +116,5 @@ public:
 };
 
 
-#endif //_PC_Audio_H
+#endif //_PC_Audio_HPP
 
