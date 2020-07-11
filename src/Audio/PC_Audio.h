@@ -2,9 +2,11 @@
 #define _PC_Audio_H
 
 #include <iostream>
+#include <opus.h>     // https://opus-codec.org/docs/opus_api-1.3.1/index.html
+#include <portaudio.h>// http://portaudio.com/docs/v19-doxydocs/
 #include <thread>
-#include <portaudio.h>    // http://portaudio.com/docs/v19-doxydocs/
-#include <opus.h>         // https://opus-codec.org/docs/opus_api-1.3.1/index.html
+
+#include "PC_Network.h"
 
 /* PeersChat Audio Handler Library
  *
@@ -107,6 +109,7 @@
  * @method setInputVolume(1)  Sets 'inputVolume' to parameter
  *
  * @method setOutputVolume(1)  Sets 'outputVolume' to parameter
+ *
  */
 class PC_AudioHandler {
 private:

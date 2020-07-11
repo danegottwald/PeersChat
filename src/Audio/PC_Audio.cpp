@@ -96,15 +96,12 @@ int PC_AudioHandler::Pa_Callback(const void *input,
 	// Pointers to the input and output streams
 	auto *in = (float*) input;
 	auto *out = (float*) output;
-
 	// Adjust the volume of the input if the modifier is not 1.0
 	if (inputVolume != 1.0f) {
 		for(unsigned int i = 0; i < framesPerBuffer; ++i) {
-			// Adjust input volume
 			in[i] *= inputVolume;
 		}
 	}
-
 	// Encode and check whether an error occurred
 	encodedFrame = opus_encode_float(encoder, in, FRAME_SIZE, encodedAudio, MAX_PACKET_SIZE);
 	opus_error_check("Failed to encode frame", encodedFrame, true);
@@ -116,10 +113,10 @@ int PC_AudioHandler::Pa_Callback(const void *input,
 	if (outputVolume != 1.0f) {
 		//memcpy(out, in, framesPerBuffer * 4);
 		for(unsigned int i = 0; i < framesPerBuffer; ++i) {
-			// Adjust output volume of input playback
 			out[i] *= outputVolume;
 		}
 	}
+
 	return 0;
 }
 
@@ -219,6 +216,7 @@ void PC_AudioHandler::beginVoiceStreamThreaded() {
 bool PC_AudioHandler::getStreamState() {
 	return streamState;
 }
+
 
 /* opus_ErrorCheck()
  * Used to check if an opus error has occurred.
