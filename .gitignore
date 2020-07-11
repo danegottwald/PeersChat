@@ -1,0 +1,5 @@
+*.o
+
+# Protect from accidentally adding test code/binary
+a.out
+main.cpp
