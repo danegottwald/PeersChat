@@ -49,6 +49,7 @@
 
 // Pre-Compiler Constants
 #define BUFFER_SIZE 4096
+#define PACKET_DELAY_MS 40
 
 
 // Global Variables
@@ -162,9 +163,22 @@ inline bool AudioInPacket_greater(const std::unique_ptr<AudioInPacket> &left, co
  *                             @AudioInPacket can be used to identify how many
  *                             packets were dropped beforehand.
  *
+ * @method retireEmptyInPacket(1)  Method that retires old/used/processed
+ *                                 @AudioInPacket structs back into @in_bucket
+ *                                 so they can be used later.
+ *
  * @method enqueue_in(1)  Enqueue's an audio packet.  Get's queue'd into
  *                        @in_packets Priority Queue so the lowest id packet
  *                        gets popped first.
+ *
+ * @method getAudioInPacket()  Get @AudioInPacket that is populated with audio
+ *                             packet data.  Data comes from peer microphone.
+ *
+ * @method getAudioOutPacket()  Get @AudioOutPacket that is populated with audio
+ *                              packet data.  Data comes from client microphone.
+ *
+ * @method retireEmptyOutPacket(1)  See @retireEmptyInPacket, but for
+ *                                  @AudioOutPacket and @out_bucket
  */
 class NPeer
 {
@@ -175,7 +189,7 @@ private:
 	int tcp;
 		// Peer Address
 	sockaddr_in udp_dest;
-		// Audio in
+		// Audio Incoming
 	std::priority_queue<std::unique_ptr<AudioInPacket>,
 	                    std::vector<std::unique_ptr<AudioInPacket>>,
 	                    std::function<bool(std::unique_ptr<AudioInPacket>&, std::unique_ptr<AudioInPacket>&)>> in_packets;
@@ -183,7 +197,7 @@ private:
 	std::queue<std::unique_ptr<AudioInPacket>> in_bucket;
 	std::mutex in_bucket_lock;
 	uint32_t in_packet_id;
-		// Audio out
+		// Audio Outgoing
 	std::queue<std::unique_ptr<AudioOutPacket>> out_packets;
 	std::mutex out_queue_lock;
 	std::queue<std::unique_ptr<AudioOutPacket>> out_bucket;
@@ -194,6 +208,7 @@ private:
 public:
 	NPeer();
 	NPeer(const char* ip, const uint16_t &port);
+	~NPeer();
 
 	// Sending Audio
 	AudioOutPacket* getEmptyOutPacket();
@@ -201,7 +216,14 @@ public:
 
 	// Receiving Audio
 	AudioInPacket* getEmptyInPacket();
+	void retireEmptyInPacket(AudioInPacket* packet);
 	void enqueue_in(AudioInPacket* packet);
+	AudioInPacket* getAudioInPacket();
+
+	// Outgoing Audio Network Thread w/ Sending Audio Functions
+private:
+	AudioOutPacket* getAudioOutPacket();
+	void retireEmptyOutPacket(AudioOutPacket* packet);
 };
 
 
