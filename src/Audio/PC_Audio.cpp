@@ -1,4 +1,4 @@
-#include "PC_Audio.hpp"
+#include "PC_Audio.h"
 
 // Forward Declarations
 void opus_error_check(const std::string& message, int error, bool critical);
@@ -11,7 +11,8 @@ uint8_t PC_AudioHandler::encodedAudio[]{};
 opus_int32 PC_AudioHandler::encodedFrame{};
 opus_int32 PC_AudioHandler::decodedFrame{};
 float PC_AudioHandler::inputVolume = 1.0f;
-float PC_AudioHandler::outputVolume = 0.1f;
+float PC_AudioHandler::outputVolume = 0.5f;
+bool PC_AudioHandler::streamState = true;
 
 /* PC_AudioHandler Constructor
  * Initialize PortAudio, set default devices, and create an
@@ -22,8 +23,7 @@ PC_AudioHandler::PC_AudioHandler() {
 	portaudioError = Pa_Initialize();
 	Pa_ErrorCheck("Failed to initialize portaudio", portaudioError, true);
 	portaudioVersion = Pa_GetVersionText();
-	portaudioError = Pa_OpenDefaultStream(&stream, 1,
-	                                      1,
+	portaudioError = Pa_OpenDefaultStream(&stream, 1,1,
 	                                      paFloat32,
 	                                      SAMPLE_RATE,
 	                                      FRAME_SIZE,
@@ -62,14 +62,20 @@ PC_AudioHandler::~PC_AudioHandler() {
 }
 
 /* beginVoiceStream()
- * Starts the voice stream
+ * Starts the voice stream, the stream will remain to stay open until
+ * stopVoiceStream() is called.  Must be called every time a stream to
+ * reopen the stream.
  */
 void PC_AudioHandler::beginVoiceStream() {
+	streamState = true;
 	portaudioError = Pa_StartStream(stream);
 	Pa_ErrorCheck("Failed to start stream", portaudioError, true);
 
 	std::cout << std::endl << "Playback Begun" << std::endl;
-	Pa_Sleep(5000);
+	while (streamState) {
+		Pa_Sleep(20);
+	}
+	//Pa_Sleep(5000);
 
 	Pa_StopStream(stream);
 	Pa_ErrorCheck("Failed to stop stream", portaudioError, true);
@@ -78,7 +84,7 @@ void PC_AudioHandler::beginVoiceStream() {
 /* Pa_Callback()
  * Called automatically every time the PortAudio engine has
  * captured audio data or when it needs more audio data for
- * the output. This function is called as a part of Pa_StartStream()
+ * the output. This function is called as a part of beginVoiceStream().
  */
 int PC_AudioHandler::Pa_Callback(const void *input,
                                  void *output,
@@ -124,28 +130,94 @@ uint8_t PC_AudioHandler::getEncodedPacket() {
 	return reinterpret_cast<uint8_t>(encodedAudio);
 }
 
+/* getInputVolume()
+ * Returns the current volume multiplier for the input device
+ */
 float PC_AudioHandler::getInputVolume() {
 	return inputVolume;
 }
 
+/* getOutputVolume()
+ * Returns the current volume multiplier for the output device
+ */
 float PC_AudioHandler::getOutputVolume() {
 	return outputVolume;
 }
 
+/* setInputVolume()
+ * Sets the input device volume multiplier to the given argument
+ */
 void PC_AudioHandler::setInputVolume(float x) {
 	inputVolume = x;
 }
 
+/* setOutputVolume()
+ * Sets the output device volume multiplier to the given argument
+ */
 void PC_AudioHandler::setOutputVolume(float x) {
 	outputVolume = x;
 }
 
+/* getDefaultInput()
+ * Returns a string that contains the name of the current default input device
+ */
 std::string PC_AudioHandler::getDefaultInput() {
 	return defaultInput;
 }
 
+/* getDefaultOutput()
+ * Returns a string that contains the name of the current default output device
+ */
 std::string PC_AudioHandler::getDefaultOutput() {
 	return defaultOutput;
+}
+
+/* getOpusVersion()
+ * Returns a string that contains the name of the version of the opus codec
+ */
+std::string PC_AudioHandler::getOpusVersion() {
+	return opusVersion;
+}
+
+/* getPortAudioVersion()
+ * Returns a string that contains the name of the version of portaudio
+ */
+std::string PC_AudioHandler::getPortAudioVersion() {
+	return portaudioVersion;
+}
+
+/* getEncodedFrameSize()
+ * Returns the size (in bytes) of the encoded packet
+ */
+uint8_t PC_AudioHandler::getEncodedFrameSize() {
+	return encodedFrame;
+}
+
+/* setStreamState()
+ * Closes the currently open voice stream
+ */
+void PC_AudioHandler::stopVoiceStream() {
+	streamState = false;
+	if(audioThread.joinable()) {
+		audioThread.join();
+	}
+}
+
+/* beginVoiceStreamThreaded()
+ * Opens a voice stream on a different thread.  The thread is closed
+ * once stopVoiceStream is called.
+ * TODO: BUG: Cannot be called after being stopped once
+ */
+void PC_AudioHandler::beginVoiceStreamThreaded() {
+	audioThread = std::thread(&PC_AudioHandler::beginVoiceStream, this);
+}
+
+/* getStreamState()
+ * Returns the state of the audio streamer.  True is currently active and
+ * False is not active.
+ */
+bool PC_AudioHandler::getStreamState() {
+	return streamState;
 }
 
 /* opus_ErrorCheck()
@@ -178,4 +250,3 @@ void Pa_ErrorCheck(const std::string& message, int error, bool critical) {
 		}
 	}
 }
-
