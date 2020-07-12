@@ -1,5 +1,5 @@
 #include <gtk/gtk.h>
-
+#include <regex>
 
 // Macros used for GtkWidget properties
 
@@ -32,6 +32,29 @@ gchar *get_child_entry_text(GtkWidget *container, const gchar *entry_name)
 	return entry_text;
 }
 
+bool entry_text_is_valid(gchar *entry_text)
+{
+	bool match = std::regex_match(entry_text, std::regex("\\w+"));
+	return match;
+}
+
+void show_error_popup(const gchar *message)
+{
+	GtkWidget *error_dialog;
+	GtkDialogFlags flags = GTK_DIALOG_MODAL;
+
+	error_dialog = gtk_message_dialog_new(NULL, flags, GTK_MESSAGE_ERROR, GTK_BUTTONS_CLOSE, "%s", message);
+
+	gtk_dialog_run(GTK_DIALOG(error_dialog));
+	gtk_widget_destroy(error_dialog);
+}
+
+void username_popup() {
+	show_error_popup(
+	"Error: Username restricted to alphanumeric characters.\n [A-Z], [a-z], [0-9], [_]" 
+	);
+}
+
 
 // GTK+ Callback functions bound to GtkObjects
 
@@ -43,6 +66,15 @@ void hostButtonPressed(GtkWidget *widget, gpointer data)
 
 	name_text = get_child_entry_text(GTK_WIDGET(data), "NameEntry");
 	g_print("Name Entry Text: %s\n", name_text);
+	
+	if(!entry_text_is_valid(name_text))
+	{
+		username_popup();
+	}	
+	else
+	{
+		// Begin hosting session
+	}
 }
 
 void joinButtonPressed(GtkWidget *widget, gpointer data)
@@ -57,6 +89,15 @@ void joinButtonPressed(GtkWidget *widget, gpointer data)
 
 	g_print("Name Entry Text: %s\n", name_text);
 	g_print("Link Entry Text: %s\n", link_text);
+	
+	if(!entry_text_is_valid(name_text))
+	{
+		username_popup();
+	}	
+	else
+	{
+		// Begin joining session
+	}
 }
 
 void activate(GtkApplication *app, gpointer user_data)
@@ -69,6 +110,7 @@ void activate(GtkApplication *app, gpointer user_data)
 	GtkWidget *button_box;
 	GtkWidget *host_button;
 	GtkWidget *join_button;
+	GtkWidget *error_dialog;
 	
 	window = gtk_application_window_new(app);
 	gtk_window_set_title(GTK_WINDOW(window), "PeersChat GUI Demo");
@@ -102,14 +144,13 @@ void activate(GtkApplication *app, gpointer user_data)
 	g_signal_connect(join_button, "clicked", G_CALLBACK(joinButtonPressed), widget_box);
 	gtk_container_add(GTK_CONTAINER(button_box), join_button);
 	
+	
+
 	// Pull focus away from text entries to display placeholder text;
 	gtk_widget_grab_focus(host_button);
 	
 	gtk_widget_show_all(window);
 }
-
-
-
 
 
 int main(int argc, char *argv[])
