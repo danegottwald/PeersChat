@@ -12,33 +12,51 @@ const int DEFAULT_WINDOW_PADDING = 32;
 const int DEFAULT_WIDGET_PADDING = 16;
 
 
+// Utility functions used by GTK+ callback functions
+
+gchar *get_child_entry_text(GtkWidget *container, const gchar *entry_name)
+{
+	gchar *entry_text = NULL;
+	GList *widgets = gtk_container_get_children(GTK_CONTAINER(container));
+
+	while(widgets != NULL) {
+		const gchar *widget_name = gtk_widget_get_name(GTK_WIDGET(widgets->data));
+		if(strcmp(widget_name, entry_name) == 0)
+		{
+			entry_text = const_cast<gchar*>(gtk_entry_get_text(GTK_ENTRY(widgets->data)));
+			break;
+		}
+		widgets = widgets->next;
+	}
+
+	return entry_text;
+}
+
+
 // GTK+ Callback functions bound to GtkObjects
 
 void hostButtonPressed(GtkWidget *widget, gpointer data)
 {
         g_print("Host Button pressed\n");
 	
-	GList *widgets = gtk_container_get_children(GTK_CONTAINER(data));
-	const gchar *name_text;
-	const gchar *link_text;
+	gchar *name_text;
 
-	while(widgets != NULL) {
-		const gchar *widget_name = gtk_widget_get_name(GTK_WIDGET(widgets->data));
-		g_print("Widget Name: %s\n", widget_name);
-		if(strcmp(widget_name, "NameEntry") == 0)
-			name_text = gtk_entry_get_text(GTK_ENTRY(widgets->data));
-		if(strcmp(widget_name, "LinkEntry") == 0) 
-			link_text = gtk_entry_get_text(GTK_ENTRY(widgets->data));
-		widgets = widgets->next;
-	}
-
+	name_text = get_child_entry_text(GTK_WIDGET(data), "NameEntry");
 	g_print("Name Entry Text: %s\n", name_text);
-	
 }
 
 void joinButtonPressed(GtkWidget *widget, gpointer data)
 {
         g_print("Join Button pressed\n");
+
+	gchar *name_text;
+	gchar *link_text;
+
+	name_text = get_child_entry_text(GTK_WIDGET(data), "NameEntry");
+	link_text = get_child_entry_text(GTK_WIDGET(data), "LinkEntry");	
+
+	g_print("Name Entry Text: %s\n", name_text);
+	g_print("Link Entry Text: %s\n", link_text);
 }
 
 void activate(GtkApplication *app, gpointer user_data)
@@ -89,6 +107,9 @@ void activate(GtkApplication *app, gpointer user_data)
 	
 	gtk_widget_show_all(window);
 }
+
+
+
 
 
 int main(int argc, char *argv[])
