@@ -17,6 +17,23 @@ const int DEFAULT_WIDGET_PADDING = 16;
 void hostButtonPressed(GtkWidget *widget, gpointer data)
 {
         g_print("Host Button pressed\n");
+	
+	GList *widgets = gtk_container_get_children(GTK_CONTAINER(data));
+	const gchar *name_text;
+	const gchar *link_text;
+
+	while(widgets != NULL) {
+		const gchar *widget_name = gtk_widget_get_name(GTK_WIDGET(widgets->data));
+		g_print("Widget Name: %s\n", widget_name);
+		if(strcmp(widget_name, "NameEntry") == 0)
+			name_text = gtk_entry_get_text(GTK_ENTRY(widgets->data));
+		if(strcmp(widget_name, "LinkEntry") == 0) 
+			link_text = gtk_entry_get_text(GTK_ENTRY(widgets->data));
+		widgets = widgets->next;
+	}
+
+	g_print("Name Entry Text: %s\n", name_text);
+	
 }
 
 void joinButtonPressed(GtkWidget *widget, gpointer data)
@@ -32,7 +49,7 @@ void activate(GtkApplication *app, gpointer user_data)
 	GtkWidget *name_entry;
 	GtkWidget *link_entry;
 	GtkWidget *button_box;
-    GtkWidget *host_button;
+	GtkWidget *host_button;
 	GtkWidget *join_button;
 	
 	window = gtk_application_window_new(app);
@@ -47,10 +64,12 @@ void activate(GtkApplication *app, gpointer user_data)
 	gtk_container_add(GTK_CONTAINER(widget_box), peerschat_label);
 	
 	name_entry = gtk_entry_new();
+	gtk_widget_set_name(name_entry, "NameEntry");
 	gtk_entry_set_placeholder_text(GTK_ENTRY(name_entry), "Enter Username");
 	gtk_container_add(GTK_CONTAINER(widget_box), name_entry);
 	
 	link_entry = gtk_entry_new();
+	gtk_widget_set_name(link_entry, "LinkEntry");
 	gtk_entry_set_placeholder_text(GTK_ENTRY(link_entry), "If Joining Session: Enter Link");
 	gtk_container_add(GTK_CONTAINER(widget_box), link_entry);
 	
@@ -58,18 +77,19 @@ void activate(GtkApplication *app, gpointer user_data)
 	gtk_container_add(GTK_CONTAINER(widget_box), button_box);
 	
 	host_button = gtk_button_new_with_label("Host Session");
-	g_signal_connect(host_button, "clicked", G_CALLBACK(hostButtonPressed), NULL);
+	g_signal_connect(host_button, "clicked", G_CALLBACK(hostButtonPressed), widget_box);
 	gtk_container_add(GTK_CONTAINER(button_box), host_button);
 	
 	join_button = gtk_button_new_with_label("Join Session");
-	g_signal_connect(join_button, "clicked", G_CALLBACK(joinButtonPressed), NULL);
+	g_signal_connect(join_button, "clicked", G_CALLBACK(joinButtonPressed), widget_box);
 	gtk_container_add(GTK_CONTAINER(button_box), join_button);
 	
-	// Pull focus away from text entries to display place holder text;
+	// Pull focus away from text entries to display placeholder text;
 	gtk_widget_grab_focus(host_button);
 	
 	gtk_widget_show_all(window);
 }
+
 
 int main(int argc, char *argv[])
 {
