@@ -34,22 +34,9 @@ struct InvalidIPAddr : std::exception {
 
 
 
-// AudioPacket Definitions ---------------------------------------------------------------
-AudioPacket::AudioPacket() : packet_id(0), packet_len(0), packet(new uint8_t[BUFFER_SIZE]) { }
-
-
-AudioPacket::AudioPacket(uint8_t *packet, size_t packet_len) : AudioPacket()
-{
-	this->packet_len = packet_len;
-	if(!packet) throw NullPtr();
-	else if(packet_len > BUFFER_SIZE) throw BuffSmall();
-	std::memcpy(this->packet.get(), packet, packet_len);
-}
-
-
 // NPeer Definitions ---------------------------------------------------------------------
 // Constructor
-NPeer::NPeer() : tcp(-1), in_packets(AudioInPacket_greater), in_packet_id(0), out_packet_id(0)
+NPeer::NPeer() : in_packets(AudioInPacket_greater)
 {
 	std::memset((void*)&(this->udp_dest), 0, sizeof(sockaddr_in));
 	udp_dest.sin_family = AF_INET;
@@ -163,7 +150,7 @@ AudioInPacket* NPeer::getAudioInPacket()
 	}
 
 	in_queue_lock.unlock();
-	out_packet_id = packet->packet_id;
+	if(packet) in_packet_id = packet->packet_id;
 	return packet;
 }
 

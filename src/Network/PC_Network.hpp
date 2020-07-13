@@ -78,12 +78,9 @@ extern std::chrono::milliseconds PACKET_DELAY; //defaults to 50ms
  */
 struct AudioPacket
 {
-	uint32_t packet_id;
-	uint16_t packet_len;
-	std::unique_ptr<uint8_t> packet;
-
-	AudioPacket();
-	AudioPacket(uint8_t* packet, size_t packet_len);
+	uint32_t packet_id = 0;
+	uint16_t packet_len = 0;
+	std::unique_ptr<uint8_t> packet = std::unique_ptr<uint8_t>(new uint8_t[BUFFER_SIZE]);
 	inline bool operator<(const AudioPacket &other) { return this->packet_id < other.packet_id; }
 };
 
@@ -185,7 +182,7 @@ class NPeer
 private:
 		// UDP Socket for audio to/from everyone | TCP Socket for comms to this Peer
 	static int udp;
-	int tcp;
+	int tcp = -1;
 		// Peer Address
 	sockaddr_in udp_dest;
 		// Audio Incoming
@@ -195,13 +192,13 @@ private:
 	std::mutex in_queue_lock;
 	std::queue<std::unique_ptr<AudioInPacket>> in_bucket;
 	std::mutex in_bucket_lock;
-	uint32_t in_packet_id;
+	uint32_t in_packet_id = 0;
 		// Audio Outgoing
 	std::queue<std::unique_ptr<AudioOutPacket>> out_packets;
 	std::mutex out_queue_lock;
 	std::queue<std::unique_ptr<AudioOutPacket>> out_bucket;
 	std::mutex out_bucket_lock;
-	uint32_t out_packet_id;
+	uint32_t out_packet_id = 0;
 
 	// Constructor
 public:
@@ -209,11 +206,12 @@ public:
 	NPeer(const char* ip, const uint16_t &port);
 	~NPeer();
 
-	// Sending Audio
+	// Sending Audio -- All the functions you need to send audio
 	AudioOutPacket* getEmptyOutPacket();
 	void enqueue_out(AudioOutPacket* packet);
 
-	// Receiving Audio
+	// Receiving Audio -- All the functions you need to receive audio
+	inline uint32_t getInPacketId() { return in_packet_id; }
 	AudioInPacket* getEmptyInPacket();
 	void retireEmptyInPacket(AudioInPacket* packet);
 	void enqueue_in(AudioInPacket* packet);
