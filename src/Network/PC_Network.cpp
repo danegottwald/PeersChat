@@ -97,6 +97,8 @@ void NPeer::enqueue_out(AudioOutPacket* packet)
 	if(!packet) throw NullPtr();
 	else if(packet->packet_len == 0) throw EmptyPack();
 
+	packet->packet_id = out_packet_id++;
+
 	out_queue_lock.lock();
 	out_packets.emplace(packet);
 	out_queue_lock.unlock();
@@ -161,6 +163,7 @@ AudioInPacket* NPeer::getAudioInPacket()
 	}
 
 	in_queue_lock.unlock();
+	out_packet_id = packet->packet_id;
 	return packet;
 }
 
