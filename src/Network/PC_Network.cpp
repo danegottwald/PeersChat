@@ -1,11 +1,20 @@
 #include "PC_Network.hpp"
 
 
-// Pre-Compiler Constants
+// Namespace -----------------------------------------------------------------------------
+using namespace std::chrono;
+using namespace std::chrono_literals;
+
+
+// Pre-Compiler Constants ----------------------------------------------------------------
 #define IP_LEN 15
 
 
-// Exceptions
+// Globals -------------------------------------------------------------------------------
+std::chrono::milliseconds PACKET_DELAY = 50ms;
+
+
+// Exceptions ----------------------------------------------------------------------------
 struct NullPtr : std::exception {
 	const char* what() const noexcept { return "PC_Network.cpp ERROR: Null Pointer Encountered.\n"; }
 };
@@ -23,10 +32,10 @@ struct InvalidIPAddr : std::exception {
 };
 
 
-// Function Definitions
-AudioPacket::AudioPacket() : packet_id(0), packet_len(0), packet(new uint8_t[BUFFER_SIZE])
-{
-}
+
+
+// AudioPacket Definitions ---------------------------------------------------------------
+AudioPacket::AudioPacket() : packet_id(0), packet_len(0), packet(new uint8_t[BUFFER_SIZE]) { }
 
 
 AudioPacket::AudioPacket(uint8_t *packet, size_t packet_len) : AudioPacket()
@@ -38,6 +47,8 @@ AudioPacket::AudioPacket(uint8_t *packet, size_t packet_len) : AudioPacket()
 }
 
 
+// NPeer Definitions ---------------------------------------------------------------------
+// Constructor
 NPeer::NPeer() : tcp(-1), in_packets(AudioInPacket_greater), in_packet_id(0), out_packet_id(0)
 {
 	std::memset((void*)&(this->udp_dest), 0, sizeof(sockaddr_in));
@@ -59,10 +70,15 @@ NPeer::NPeer(const char *ip, const uint16_t &port) : NPeer()
 }
 
 
+NPeer::~NPeer() { }
+
+
+// Sending Audio
 AudioOutPacket* NPeer::getEmptyOutPacket()
 {
 	AudioOutPacket *packet;
 	out_bucket_lock.lock();
+
 	if(!out_bucket.empty())
 	{
 		packet = out_bucket.front().release();
@@ -70,6 +86,7 @@ AudioOutPacket* NPeer::getEmptyOutPacket()
 	}
 	else
 		packet = new AudioOutPacket;
+
 	out_bucket_lock.unlock();
 	return packet;
 }
@@ -86,10 +103,12 @@ void NPeer::enqueue_out(AudioOutPacket* packet)
 }
 
 
+// Receiving Audio
 AudioInPacket* NPeer::getEmptyInPacket()
 {
 	AudioInPacket *packet;
 	in_bucket_lock.lock();
+
 	if(!in_bucket.empty())
 	{
 		packet = in_bucket.front().release();
@@ -97,8 +116,17 @@ AudioInPacket* NPeer::getEmptyInPacket()
 	}
 	else
 		packet = new AudioInPacket;
+
 	in_bucket_lock.unlock();
 	return packet;
+}
+
+
+void NPeer::retireEmptyInPacket(AudioInPacket *packet)
+{
+	in_bucket_lock.lock();
+	in_bucket.emplace(packet);
+	in_bucket_lock.unlock();
 }
 
 
@@ -107,9 +135,58 @@ void NPeer::enqueue_in(AudioInPacket* packet)
 	if(!packet) throw NullPtr();
 	else if(packet->packet_len == 0) throw EmptyPack();
 
+	packet->received = steady_clock::now();
+
 	in_queue_lock.lock();
 	in_packets.emplace(packet);
 	in_queue_lock.unlock();
+}
+
+
+AudioInPacket* NPeer::getAudioInPacket()
+{
+	AudioInPacket *packet = NULL;
+	in_queue_lock.lock();
+
+	if(!in_packets.empty())
+	{
+		packet = in_packets.top().get();
+		if((steady_clock::now() - packet->received) > PACKET_DELAY)
+		{
+			const_cast<std::unique_ptr<AudioInPacket>&>(in_packets.top()).release();
+			in_packets.pop();
+		}
+		else
+			packet = NULL;
+	}
+
+	in_queue_lock.unlock();
+	return packet;
+}
+
+
+// Outgoing Audio Network Thread w/ Sending Audio Functions
+AudioOutPacket* NPeer::getAudioOutPacket()
+{
+	AudioOutPacket* packet = NULL;
+	out_queue_lock.lock();
+
+	if(!out_packets.empty())
+	{
+		packet = out_packets.front().release();
+		out_packets.pop();
+	}
+
+	out_queue_lock.unlock();
+	return packet;
+}
+
+
+void NPeer::retireEmptyOutPacket(AudioOutPacket *packet)
+{
+	out_bucket_lock.lock();
+	out_bucket.emplace(packet);
+	out_bucket_lock.unlock();
 }
 
 

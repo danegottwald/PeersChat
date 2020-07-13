@@ -49,11 +49,10 @@
 
 // Pre-Compiler Constants
 #define BUFFER_SIZE 4096
-#define PACKET_DELAY_MS 40
 
 
-// Global Variables
-
+// Globals
+extern std::chrono::milliseconds PACKET_DELAY; //defaults to 50ms
 
 
 
@@ -89,7 +88,7 @@ struct AudioPacket
 };
 
 	// Type change for static error checking
-struct AudioInPacket  : public AudioPacket { };
+struct AudioInPacket  : public AudioPacket { std::chrono::time_point<std::chrono::steady_clock> received; };
 struct AudioOutPacket : public AudioPacket { };
 
 	// Comparator for std::priority_queue that pops the smallest packet first
