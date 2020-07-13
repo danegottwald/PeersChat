@@ -34,7 +34,52 @@ struct InvalidIPAddr : std::exception {
 
 
 
-// NPeer Definitions ---------------------------------------------------------------------
+// NPeer ---------------------------------------------------------------------------------
+/* Member Implementation Documentation
+ *  @member udp  Shared UDP socket used to send data out to all peers.  Setting
+ *              this paremeter in any NPeer class sets it for all as per the
+ *              static keyword.
+ *
+ * @member tcp  TCP Socket used to communicate data to this specific peer.  Used
+ *              for data where guaranteed delivery is important... pretty much
+ *              everything except for audio.
+ *
+ * @member udp_dest  Destination address for this peer's UDP socket. Audio
+ *                   data sent over @udp will be sent to this address.
+ *
+ * @member in_packets  Priority queue of type @AudioInPacket ordered by
+ *                     @packet_id such that popping off an element will get you
+ *                     the lowest numbered packet.  This is used to get packets
+ *                     in order even if they arrived out of order.
+ *
+ * @member in_queue_lock  Mutex lock to ensure mutual exclusion with @in_packets
+ *
+ * @member in_bucket  Queue of type @AudioInPacket.  It's used to store packets
+ *                    that aren't currently in @in_packets.  The point of this
+ *                    is to store the unused packets instead of destructing and
+ *                    constructing them every time.
+ *
+ * @member in_bucket_lock  See @in_queue_lock but with @in_packets replaced with
+ *                         @in_bucket.
+ *
+ * @member in_packet_id  @packet_id from the last @AudioInPacket that was
+ *                       popped off @in_packets.  Used to identify if any
+ *                       packets were dropped.
+ *
+ * @member out_packets  Queue of type @AudioOutPacket.  Exists for the purpose
+ *                      of queuing up encoded audio to be sent over network to
+ *                      peer.
+ *
+ * @member out_queue_lock  See @in_queue_lock but for @out_packets instead of
+ *                         @in_packets.
+ *
+ * @member out_bucket  See @in_bucket but with @AudioOutPacket instead of
+ *                     @AudioInPacket and @out_packets instead of @in_packets.
+ *
+ * @member out_packet_id  Next id that will be assigned to @packet_id in
+ *                        @AudioPacket.  Handles sequentially numbering packets.
+ *
+ */
 // Constructor
 NPeer::NPeer() : in_packets(AudioInPacket_greater)
 {
@@ -155,7 +200,12 @@ AudioInPacket* NPeer::getAudioInPacket()
 }
 
 
-// Outgoing Audio Network Thread w/ Sending Audio Functions
+/*
+ * Get @AudioOutPacket that is populated with audio packet data.  The data should be
+ * provided by the client audio processor from the microphone.
+ *
+ * @return  A pointer to an AudioOutPacket OR a NULL pointer if none are available.
+ */
 AudioOutPacket* NPeer::getAudioOutPacket()
 {
 	AudioOutPacket* packet = NULL;
@@ -172,6 +222,11 @@ AudioOutPacket* NPeer::getAudioOutPacket()
 }
 
 
+/*
+ * Retire an AudioOutPacket that isn't needed anymore so it can be recylced later.
+ *
+ * @param packet  A pointer to the AudioOutPacket.
+ */
 void NPeer::retireEmptyOutPacket(AudioOutPacket *packet)
 {
 	out_bucket_lock.lock();

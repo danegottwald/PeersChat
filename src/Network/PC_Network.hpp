@@ -56,7 +56,7 @@ extern std::chrono::milliseconds PACKET_DELAY; //defaults to 50ms
 
 
 
-// Audio Packet Struct ---------------------------------------------------------
+// Audio Packet Struct -------------------------------------------------------------------
 /* AudioPacket: A struct that contains an encoded audio packet
  *
  * @member packet_id  Unique id for an incoming packet from this peer.  Packets
@@ -92,89 +92,65 @@ struct AudioOutPacket : public AudioPacket { };
 inline bool AudioInPacket_greater(const std::unique_ptr<AudioInPacket> &left, const std::unique_ptr<AudioInPacket> &right) { return !((*left) < (*right)); }
 
 
-// NPeer Class -----------------------------------------------------------------
-/* NPeer: A class for handling networking to your peers
- *
- * @member udp  Shared UDP socket used to send data out to all peers.  Setting
- *              this paremeter in any NPeer class sets it for all as per the
- *              static keyword.
- *
- * @member tcp  TCP Socket used to communicate data to this specific peer.  Used
- *              for data where guaranteed delivery is important... pretty much
- *              everything except for audio.
- *
- * @member udp_dest  Destination address for this peer's UDP socket. Audio
- *                   data sent over @udp will be sent to this address.
- *
- * @member in_packets  Priority queue of type @AudioInPacket ordered by
- *                     @packet_id such that popping off an element will get you
- *                     the lowest numbered packet.  This is used to get packets
- *                     in order even if they arrived out of order.
- *
- * @member in_queue_lock  Mutex lock to ensure mutual exclusion with @in_packets
- *
- * @member in_bucket  Queue of type @AudioInPacket.  It's used to store packets
- *                    that aren't currently in @in_packets.  The point of this
- *                    is to store the unused packets instead of destructing and
- *                    constructing them every time.
- *
- * @member in_bucket_lock  See @in_queue_lock but with @in_packets replaced with
- *                         @in_bucket.
- *
- * @member in_packet_id  @packet_id from the last @AudioInPacket that was
- *                       popped off @in_packets.  Used to identify if any
- *                       packets were dropped.
- *
- * @member out_packets  Queue of type @AudioOutPacket.  Exists for the purpose
- *                      of queuing up encoded audio to be sent over network to
- *                      peer.
- *
- * @member out_queue_lock  See @in_queue_lock but for @out_packets instead of
- *                         @in_packets.
- *
- * @member out_bucket  See @in_bucket but with @AudioOutPacket instead of
- *                     @AudioInPacket and @out_packets instead of @in_packets.
- *
- * @member out_packet_id  Next id that will be assigned to @packet_id in
- *                        @AudioPacket.  Handles sequentially numbering packets.
+// NPeer Class ---------------------------------------------------------------------------
+/* NPeer: A class for handling networking to your peers -- API DOCUMENTATION
  *
  * @constructor NPeer(0)  Default constructor
  *
- * @constructor NPeer(2)  Constructor that initializes address structure for
- *                        peer destination.
+ * @constructor NPeer(2)  Constructor that initializes address structure for peer
+ *                        destination.
+ *                      @param ip: (const char*)  IP address in standard string format
+ *                                   Ex: 192.168.1.120 or 127.0.0.1 or ...
+ *                      @param port: (const uint16_t)  Destination port number in host
+ *                              byte order
+ *                              Ex: 8080
  *
- * @method getEmptyOutPacket()  Method that returns an @AudioOutPacket.  Packet
- *                              may have junk/old data in it.  Make sure to
- *                              overwrite.  @AudioOutPacket returned should be
- *                              passed to enqueue_out after populated with
- *                              being packet data.
+ * @method getEmptyOutPacket()  Method that returns an @AudioOutPacket.  Packet may have
+ *                              junk/old data in it, make sure to overwrite.
+ *                              @AudioOutPacket returned should be passed to @enqueue_out
+ *                              after being populated with audio packet data.
+ *                            @return (AudioOutPacket*) Pointer to AudioOutPacket that is
+ *                              given to the client to be populated with audio/mic data.
  *
- * @method enqueue_out(1)  Enqueue's encoded audio packet in the form of
- *                         @AudioOutPacket for the purposes of being sent to
- *                         peer out @udp socket.
+ * @method enqueue_out(1)  Enqueue's encoded audio packet in the form of @AudioOutPacket
+ *                         for the purposes of being sent to peer through @udp socket
+ *                       @param packet: (AudioOutPacket*)  A pointer to an AudioOutPacket
+ *                               that is populated with audio data from client.
  *
- * @method getEmptyInPacket()  Method that returns an @AudioInPacket.  Packet
- *                             contains an audio packet to be played out
- *                             speaker.  @packet_id parameter in
- *                             @AudioInPacket can be used to identify how many
- *                             packets were dropped beforehand.
+ * @method getEmptyInPacket()  Method that returns a @AudioInPacket.  Packet may contain
+ *                             junk data that should be overwritten.  Should be populated
+ *                             with mic data from peer.
+ *                           @return (AudioInPacket*) Pointer to AudioInPacket that is
+ *                            given to the client to be populated with audio from peer.
  *
- * @method retireEmptyInPacket(1)  Method that retires old/used/processed
- *                                 @AudioInPacket structs back into @in_bucket
- *                                 so they can be used later.
+ * @method retireEmptyInPacket(1)  Method that retires old/used/processed @AudioInPacket
+ *                                 to be recycled later.
+ *                               @param packet (AudioInPacket*) Pointer to AudioInPacket
+ *                                       that is to be retired.
  *
- * @method enqueue_in(1)  Enqueue's an audio packet.  Get's queue'd into
- *                        @in_packets Priority Queue so the lowest id packet
- *                        gets popped first.
+ * @method enqueue_in(1)  Enqueue's an audio packet.  Get's queue'd into @in_packets
+ *                        Priority Queue so the lowest id packet gets popped first.
+ *                      @param packet (AudioInPacket*) Pointer to packet that is populated
+ *                              with peer mic data
  *
- * @method getAudioInPacket()  Get @AudioInPacket that is populated with audio
- *                             packet data.  Data comes from peer microphone.
+ * @method getAudioInPacket()  Get @AudioInPacket that is populated with audio packet
+ *                             data.  Data comes from peer microphone.  packet_id from
+ *                             return struct can be used in conjunction with
+ *                             @getInPacketId to identify packet loss scenarios
+ *                           @return (AudioInPacket*) Pointer to AudioInPacket populated
+ *                             with audio from peer
  *
- * @method getAudioOutPacket()  Get @AudioOutPacket that is populated with audio
- *                              packet data.  Data comes from client microphone.
+ * @method getInPacketId()  Returns what the id of the last AudioInPacket was.  Should
+ *                          be used to identify packet loss.  Call this to get packet_id
+ *                          then call @getAudioInPacket.  The difference between the two
+ *                          id's provided by those functions should be 1 when there is no
+ *                          packet loss, and if there is packet loss, the number of
+ *                          lost packets will be the difference minus 1.
+ *                        @return (uint32_t) Last packet id returned by @getAudioInPacket
+ *                          Ex: uint32_t lastId = getInPacketId();
+ *                              AudioInPacket *packet = getAudioInPacket();
+ *                              int packets_lost = packet->packet_id - lastId - 1;
  *
- * @method retireEmptyOutPacket(1)  See @retireEmptyInPacket, but for
- *                                  @AudioOutPacket and @out_bucket
  */
 class NPeer
 {
@@ -211,11 +187,11 @@ public:
 	void enqueue_out(AudioOutPacket* packet);
 
 	// Receiving Audio -- All the functions you need to receive audio
-	inline uint32_t getInPacketId() { return in_packet_id; }
 	AudioInPacket* getEmptyInPacket();
 	void retireEmptyInPacket(AudioInPacket* packet);
 	void enqueue_in(AudioInPacket* packet);
 	AudioInPacket* getAudioInPacket();
+	inline uint32_t getInPacketId() { return in_packet_id; }
 
 	// Outgoing Audio Network Thread w/ Sending Audio Functions
 private:
