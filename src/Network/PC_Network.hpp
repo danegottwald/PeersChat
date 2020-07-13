@@ -85,7 +85,11 @@ struct AudioPacket
 };
 
 	// Type change for static error checking
-struct AudioInPacket  : public AudioPacket { std::chrono::time_point<std::chrono::steady_clock> received; };
+struct AudioInPacket  : public AudioPacket {
+private:
+	std::chrono::time_point<std::chrono::steady_clock> received;
+	friend class NPeer;
+};
 struct AudioOutPacket : public AudioPacket { };
 
 	// Comparator for std::priority_queue that pops the smallest packet first
