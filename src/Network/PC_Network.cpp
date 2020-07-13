@@ -81,7 +81,7 @@ struct InvalidIPAddr : std::exception {
  *
  */
 // Constructor
-NPeer::NPeer() : in_packets(AudioInPacket_greater)
+NPeer::NPeer() noexcept : in_packets(AudioInPacket_greater)
 {
 	std::memset((void*)&(this->udp_dest), 0, sizeof(sockaddr_in));
 	udp_dest.sin_family = AF_INET;
@@ -106,7 +106,7 @@ NPeer::~NPeer() { }
 
 
 // Sending Audio
-AudioOutPacket* NPeer::getEmptyOutPacket()
+AudioOutPacket* NPeer::getEmptyOutPacket() noexcept
 {
 	AudioOutPacket *packet;
 	out_bucket_lock.lock();
@@ -138,7 +138,7 @@ void NPeer::enqueue_out(AudioOutPacket* packet)
 
 
 // Receiving Audio
-AudioInPacket* NPeer::getEmptyInPacket()
+AudioInPacket* NPeer::getEmptyInPacket() noexcept
 {
 	AudioInPacket *packet;
 	in_bucket_lock.lock();
@@ -156,7 +156,7 @@ AudioInPacket* NPeer::getEmptyInPacket()
 }
 
 
-void NPeer::retireEmptyInPacket(AudioInPacket *packet)
+void NPeer::retireEmptyInPacket(AudioInPacket *packet) noexcept
 {
 	in_bucket_lock.lock();
 	in_bucket.emplace(packet);
@@ -177,7 +177,7 @@ void NPeer::enqueue_in(AudioInPacket* packet)
 }
 
 
-AudioInPacket* NPeer::getAudioInPacket()
+AudioInPacket* NPeer::getAudioInPacket() noexcept
 {
 	AudioInPacket *packet = NULL;
 	in_queue_lock.lock();
@@ -206,7 +206,7 @@ AudioInPacket* NPeer::getAudioInPacket()
  *
  * @return  A pointer to an AudioOutPacket OR a NULL pointer if none are available.
  */
-AudioOutPacket* NPeer::getAudioOutPacket()
+AudioOutPacket* NPeer::getAudioOutPacket() noexcept
 {
 	AudioOutPacket* packet = NULL;
 	out_queue_lock.lock();
@@ -227,7 +227,7 @@ AudioOutPacket* NPeer::getAudioOutPacket()
  *
  * @param packet  A pointer to the AudioOutPacket.
  */
-void NPeer::retireEmptyOutPacket(AudioOutPacket *packet)
+void NPeer::retireEmptyOutPacket(AudioOutPacket *packet) noexcept
 {
 	out_bucket_lock.lock();
 	out_bucket.emplace(packet);

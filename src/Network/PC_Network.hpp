@@ -178,25 +178,25 @@ private:
 
 	// Constructor
 public:
-	NPeer();
+	NPeer() noexcept;
 	NPeer(const char* ip, const uint16_t &port);
-	~NPeer();
+	~NPeer() noexcept;
 
 	// Sending Audio -- All the functions you need to send audio
-	AudioOutPacket* getEmptyOutPacket();
+	AudioOutPacket* getEmptyOutPacket() noexcept;
 	void enqueue_out(AudioOutPacket* packet);
 
 	// Receiving Audio -- All the functions you need to receive audio
-	AudioInPacket* getEmptyInPacket();
-	void retireEmptyInPacket(AudioInPacket* packet);
+	AudioInPacket* getEmptyInPacket() noexcept;
+	void retireEmptyInPacket(AudioInPacket* packet) noexcept;
 	void enqueue_in(AudioInPacket* packet);
-	AudioInPacket* getAudioInPacket();
-	inline uint32_t getInPacketId() { return in_packet_id; }
+	AudioInPacket* getAudioInPacket() noexcept;
+	inline uint32_t getInPacketId() noexcept { return in_packet_id; }
 
 	// Outgoing Audio Network Thread w/ Sending Audio Functions
 private:
-	AudioOutPacket* getAudioOutPacket();
-	void retireEmptyOutPacket(AudioOutPacket* packet);
+	AudioOutPacket* getAudioOutPacket() noexcept;
+	void retireEmptyOutPacket(AudioOutPacket* packet) noexcept;
 };
 
 
