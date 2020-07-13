@@ -19,7 +19,8 @@ gchar *get_child_entry_text(GtkWidget *container, const gchar *entry_name)
 	gchar *entry_text = NULL;
 	GList *widgets = gtk_container_get_children(GTK_CONTAINER(container));
 
-	while(widgets != NULL) {
+	while(widgets != NULL) 
+	{
 		const gchar *widget_name = gtk_widget_get_name(GTK_WIDGET(widgets->data));
 		if(strcmp(widget_name, entry_name) == 0)
 		{
@@ -36,6 +37,54 @@ bool entry_text_is_valid(gchar *entry_text)
 {
 	bool match = std::regex_match(entry_text, std::regex("\\w+"));
 	return match;
+}
+
+void hide_all_child_widgets(GtkWidget *container)
+{
+	GList *widgets = gtk_container_get_children(GTK_CONTAINER(container));
+	while(widgets != NULL) 
+	{
+		gtk_widget_hide(GTK_WIDGET(widgets->data));
+		widgets = widgets->next;
+	}
+}
+
+void show_all_child_widgets(GtkWidget *container)
+{
+	GList *widgets = gtk_container_get_children(GTK_CONTAINER(container));
+	while(widgets != NULL) 
+	{
+		gtk_widget_show(GTK_WIDGET(widgets->data));
+		widgets = widgets->next;
+	}
+}
+
+void add_name_to_list(GtkWidget *list, gchar *name)
+{
+	GtkWidget *new_row;
+	GtkWidget *name_label;
+
+	new_row = gtk_list_box_row_new();
+
+	name_label = gtk_label_new(name);
+	gtk_container_add(GTK_CONTAINER(list), name_label);
+
+	gtk_container_add(GTK_CONTAINER(list), new_row);
+}
+
+void setup_lobby(GtkWidget *parent, GtkWidget *lobby_box, gchar *name)
+{
+	hide_all_child_widgets(GTK_WIDGET(parent));
+	lobby_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, DEFAULT_WIDGET_PADDING);
+	gtk_container_add(GTK_CONTAINER(parent), lobby_box);
+
+	GtkWidget *name_list = gtk_list_box_new();
+	gtk_list_box_set_selection_mode(GTK_LIST_BOX(name_list), GTK_SELECTION_NONE);
+	gtk_container_add(GTK_CONTAINER(lobby_box), name_list);
+
+	add_name_to_list(name_list, name);
+
+	gtk_widget_show_all(lobby_box);
 }
 
 void show_error_popup(const gchar *message)
@@ -73,6 +122,8 @@ void hostButtonPressed(GtkWidget *widget, gpointer data)
 	}	
 	else
 	{
+		GtkWidget *lobby_box;
+		setup_lobby(GTK_WIDGET(data), lobby_box, name_text);
 		// Begin hosting session
 	}
 }
@@ -96,6 +147,8 @@ void joinButtonPressed(GtkWidget *widget, gpointer data)
 	}	
 	else
 	{
+		GtkWidget *lobby_box;
+		setup_lobby(GTK_WIDGET(data), lobby_box, name_text);
 		// Begin joining session
 	}
 }
