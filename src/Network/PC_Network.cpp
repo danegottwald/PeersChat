@@ -124,7 +124,7 @@ AudioOutPacket* NPeer::getEmptyOutPacket() noexcept
 }
 
 
-void NPeer::enqueue_out(AudioOutPacket* packet)
+void NPeer::enqueue_out(AudioOutPacket * &packet)
 {
 	if(!packet) throw NullPtr();
 	else if(packet->packet_len == 0) throw EmptyPack();
@@ -134,6 +134,8 @@ void NPeer::enqueue_out(AudioOutPacket* packet)
 	out_queue_lock.lock();
 	out_packets.emplace(packet);
 	out_queue_lock.unlock();
+
+	packet = NULL;
 }
 
 
@@ -156,15 +158,17 @@ AudioInPacket* NPeer::getEmptyInPacket() noexcept
 }
 
 
-void NPeer::retireEmptyInPacket(AudioInPacket *packet) noexcept
+void NPeer::retireEmptyInPacket(AudioInPacket * &packet) noexcept
 {
 	in_bucket_lock.lock();
 	in_bucket.emplace(packet);
 	in_bucket_lock.unlock();
+
+	packet = NULL;
 }
 
 
-void NPeer::enqueue_in(AudioInPacket* packet)
+void NPeer::enqueue_in(AudioInPacket * &packet)
 {
 	if(!packet) throw NullPtr();
 	else if(packet->packet_len == 0) throw EmptyPack();
@@ -174,6 +178,8 @@ void NPeer::enqueue_in(AudioInPacket* packet)
 	in_queue_lock.lock();
 	in_packets.emplace(packet);
 	in_queue_lock.unlock();
+
+	packet = NULL;
 }
 
 
@@ -227,11 +233,13 @@ AudioOutPacket* NPeer::getAudioOutPacket() noexcept
  *
  * @param packet  A pointer to the AudioOutPacket.
  */
-void NPeer::retireEmptyOutPacket(AudioOutPacket *packet) noexcept
+void NPeer::retireEmptyOutPacket(AudioOutPacket * &packet) noexcept
 {
 	out_bucket_lock.lock();
 	out_bucket.emplace(packet);
 	out_bucket_lock.unlock();
+
+	packet = NULL;
 }
 
 
