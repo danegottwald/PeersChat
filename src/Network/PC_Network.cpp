@@ -106,7 +106,12 @@ NPeer::NPeer(const char *ip, const uint16_t &port) : NPeer()
 }
 
 
-NPeer::~NPeer() { }
+NPeer::~NPeer()
+{
+	run_thread = false;
+	try { audio_out_thread.join(); }
+	catch(...) { }
+}
 
 
 // Sending Audio
@@ -148,7 +153,7 @@ void NPeer::startNetStream() noexcept
 {
 	if(run_thread) return;
 	run_thread = true;
-	std::thread(&NPeer::send_audio_over_network_thread, this).detach();
+	audio_out_thread = std::thread(&NPeer::send_audio_over_network_thread, this);
 }
 
 
@@ -208,17 +213,20 @@ AudioInPacket* NPeer::getAudioInPacket() noexcept
 	AudioInPacket *packet = NULL;
 	in_queue_lock.lock();
 
-	if(!in_packets.empty())
+	do
 	{
-		packet = in_packets.top().get();
-		if((steady_clock::now() - packet->received) > PACKET_DELAY)
+		if(!in_packets.empty())
 		{
-			const_cast<std::unique_ptr<AudioInPacket>&>(in_packets.top()).release();
-			in_packets.pop();
+			packet = in_packets.top().get();
+			if((steady_clock::now() - packet->received) > PACKET_DELAY)
+			{
+				const_cast<std::unique_ptr<AudioInPacket>&>(in_packets.top()).release();
+				in_packets.pop();
+			}
+			else
+				packet = NULL;
 		}
-		else
-			packet = NULL;
-	}
+	} while (packet && (packet->packet_id < in_packet_id));
 
 	in_queue_lock.unlock();
 	if(packet) in_packet_id = packet->packet_id;
