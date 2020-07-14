@@ -23,6 +23,7 @@
 #include <sys/types.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 #elif   _WIN32
 
@@ -44,7 +45,10 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <atomic>
 #include <exception>
+#include <thread>
+#include "nettypes.hpp"
 
 
 // Pre-Compiler Constants
@@ -179,6 +183,8 @@ private:
 	std::queue<std::unique_ptr<AudioOutPacket>> out_bucket;
 	std::mutex out_bucket_lock;
 	uint32_t out_packet_id = 0;
+	bool run_thread = false;
+	std::atomic<int> out_packet_count = {0};
 
 	// Constructor
 public:
@@ -199,8 +205,10 @@ public:
 
 	// Outgoing Audio Network Thread w/ Sending Audio Functions
 private:
+	static bool create_udp_socket() noexcept;
 	AudioOutPacket* getAudioOutPacket() noexcept;
 	void retireEmptyOutPacket(AudioOutPacket * &packet) noexcept;
+	void send_audio_over_network_thread() noexcept;
 };
 
 

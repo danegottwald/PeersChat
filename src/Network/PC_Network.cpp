@@ -80,6 +80,10 @@ struct InvalidIPAddr : std::exception {
  *                        @AudioPacket.  Handles sequentially numbering packets.
  *
  */
+// Static Initialization
+int NPeer::udp = -1;
+
+
 // Constructor
 NPeer::NPeer() noexcept : in_packets(AudioInPacket_greater)
 {
@@ -135,6 +139,7 @@ void NPeer::enqueue_out(AudioOutPacket * &packet)
 	out_packets.emplace(packet);
 	out_queue_lock.unlock();
 
+	out_packet_count++;
 	packet = NULL;
 }
 
@@ -206,6 +211,20 @@ AudioInPacket* NPeer::getAudioInPacket() noexcept
 }
 
 
+bool NPeer::create_udp_socket() noexcept
+{
+	if (udp > 0) close(udp);
+	udp = -1;
+	if((udp = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
+	{
+		perror("NPeer::create_udp_socket()");
+		udp = -1;
+		return false;
+	}
+	else return true;
+}
+
+
 /*
  * Get @AudioOutPacket that is populated with audio packet data.  The data should be
  * provided by the client audio processor from the microphone.
@@ -240,6 +259,66 @@ void NPeer::retireEmptyOutPacket(AudioOutPacket * &packet) noexcept
 	out_bucket_lock.unlock();
 
 	packet = NULL;
+}
+
+
+void NPeer::send_audio_over_network_thread() noexcept
+{
+	static const int SENDV_SIZE = 9;
+	uint8_t buffer[BUFFER_SIZE + SENDV_SIZE];
+	union {
+		uint32_t word;
+		uint8_t  byte[4];
+	} split;
+
+
+
+	// Main While Loop to stay in function
+	while(run_thread)
+	{
+		// Yield if no audio packets
+		if(out_packet_count.load() <= 0)
+		{
+			std::this_thread::yield();
+			continue;
+		}
+
+		// Retrieve Audio Packet and decrement counter
+		AudioOutPacket *packet = getAudioOutPacket();
+		out_packet_count--;
+
+		// Copy into local buffer leaving room for meta data
+		std::memcpy(buffer + SENDV_SIZE, packet->packet.get(), packet->packet_len);
+
+		// Tag Type
+		buffer[0] = SENDV;
+
+		// Tag Packet ID
+		split.word = htonl(packet->packet_id);
+		buffer[1]  = split.byte[0];
+		buffer[2]  = split.byte[1];
+		buffer[3]  = split.byte[2];
+		buffer[4]  = split.byte[3];
+
+		// Tag Packet Content Length
+		split.word = htonl(packet->packet_len);
+		buffer[5]  = split.byte[0];
+		buffer[6]  = split.byte[1];
+		buffer[7]  = split.byte[2];
+		buffer[8]  = split.byte[3];
+
+		// Send
+		packet->packet_len += SENDV_SIZE;
+		__attribute__((unused)) ssize_t sent = sendto(udp, packet->packet.get(),
+		                                              packet->packet_len, 0,
+		                                              (const sockaddr*) &udp_dest, sizeof(udp_dest));
+		#ifdef DEBUG
+		if(sent != packet->packet_len)
+		{
+			std::cerr << "NPeer Audio Out Thread WARNING: Bytes Sent( " << sent << ") != Bytes Intended(" << packet->packet_len << ")\n";
+		}
+		#endif
+	}
 }
 
 
