@@ -215,6 +215,7 @@ AudioInPacket* NPeer::getAudioInPacket() noexcept
 
 	do
 	{
+		if(packet) retireEmptyInPacket(packet);
 		if(!in_packets.empty())
 		{
 			packet = in_packets.top().get();
