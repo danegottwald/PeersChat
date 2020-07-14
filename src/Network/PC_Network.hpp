@@ -38,6 +38,7 @@
 
 
 // Universal Includes
+#include <iostream>
 #include <cstdint>
 #include <cstring>
 #include <vector>
@@ -195,6 +196,8 @@ public:
 	// Sending Audio -- All the functions you need to send audio
 	AudioOutPacket* getEmptyOutPacket() noexcept;
 	void enqueue_out(AudioOutPacket * &packet);
+	void startNetStream() noexcept;
+	void stopNetStream() noexcept;
 
 	// Receiving Audio -- All the functions you need to receive audio
 	AudioInPacket* getEmptyInPacket() noexcept;

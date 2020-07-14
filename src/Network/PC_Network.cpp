@@ -144,6 +144,21 @@ void NPeer::enqueue_out(AudioOutPacket * &packet)
 }
 
 
+void NPeer::startNetStream() noexcept
+{
+	if(run_thread) return;
+	run_thread = true;
+	std::thread(&NPeer::send_audio_over_network_thread, this).detach();
+}
+
+
+
+void NPeer::stopNetStream() noexcept
+{
+	run_thread = false;
+}
+
+
 // Receiving Audio
 AudioInPacket* NPeer::getEmptyInPacket() noexcept
 {
@@ -271,6 +286,15 @@ void NPeer::send_audio_over_network_thread() noexcept
 		uint8_t  byte[4];
 	} split;
 
+	// Create UDP Server if not already
+	if(udp < 0)
+	{
+		if(!create_udp_socket())
+		{
+			std::cerr << "NPeer ERROR: Could not create udp socket" << std::endl;
+			run_thread = false;
+		}
+	}
 
 
 	// Main While Loop to stay in function
