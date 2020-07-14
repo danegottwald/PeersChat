@@ -9,7 +9,7 @@ enum NETCODES { CONNECT=0x1,
                 DENY=0x4,
                 ACCEPT=0x84,
                 PROPOSE=0x5
-}
+};
 
 #endif
 
