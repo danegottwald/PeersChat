@@ -14,22 +14,35 @@ const int DEFAULT_WIDGET_PADDING = 16;
 
 // Utility functions used by GTK+ callback functions
 
-gchar *get_child_entry_text(GtkWidget *container, const gchar *entry_name)
+GtkWidget *get_widget_by_name(GtkWidget *container, const gchar *widget_name)
 {
-	gchar *entry_text = NULL;
+	GtkWidget *return_widget = NULL;
 	GList *widgets = gtk_container_get_children(GTK_CONTAINER(container));
-
-	while(widgets != NULL) 
+	
+	while(widgets != NULL)
 	{
-		const gchar *widget_name = gtk_widget_get_name(GTK_WIDGET(widgets->data));
-		if(strcmp(widget_name, entry_name) == 0)
+		const gchar *child_name = gtk_widget_get_name(GTK_WIDGET(widgets->data));
+		if(strcmp(widget_name, child_name) == 0)
 		{
-			entry_text = const_cast<gchar*>(gtk_entry_get_text(GTK_ENTRY(widgets->data)));
+			return_widget = GTK_WIDGET(widgets->data);
 			break;
 		}
 		widgets = widgets->next;
 	}
+	
+	return return_widget;
+}	
 
+gchar *get_child_entry_text(GtkWidget *container, const gchar *entry_name)
+{
+	gchar *entry_text = NULL;
+
+	GtkWidget *entry_widget = get_widget_by_name(container, entry_name);
+	if(entry_widget != NULL) 
+	{
+		entry_text = const_cast<gchar*>(gtk_entry_get_text(GTK_ENTRY(entry_widget)));
+	}
+	
 	return entry_text;
 }
 
@@ -72,15 +85,29 @@ void add_name_to_list(GtkWidget *list, gchar *name)
 	gtk_container_add(GTK_CONTAINER(list), new_row);
 }
 
+void leaveButtonPressed(GtkWidget *widget, gpointer data)
+{
+        g_print("Leave Button pressed\n");
+		GtkWidget *lobby_box = get_widget_by_name(GTK_WIDGET(data), "LobbyBox");
+		gtk_container_remove(GTK_CONTAINER(data), lobby_box);
+		gtk_widget_show_all(GTK_WIDGET(data));
+}
+
 void setup_lobby(GtkWidget *parent, GtkWidget *lobby_box, gchar *name)
 {
 	hide_all_child_widgets(GTK_WIDGET(parent));
 	lobby_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, DEFAULT_WIDGET_PADDING);
+	gtk_widget_set_name(lobby_box, "LobbyBox");
+	gtk_widget_set_vexpand(lobby_box, TRUE);
 	gtk_container_add(GTK_CONTAINER(parent), lobby_box);
 
 	GtkWidget *name_list = gtk_list_box_new();
 	gtk_list_box_set_selection_mode(GTK_LIST_BOX(name_list), GTK_SELECTION_NONE);
 	gtk_container_add(GTK_CONTAINER(lobby_box), name_list);
+
+	GtkWidget *leave_button = gtk_button_new_with_label("Leave Session");
+	gtk_box_pack_end(GTK_BOX(lobby_box), leave_button, FALSE, FALSE, 0);
+	g_signal_connect(leave_button, "clicked", G_CALLBACK(leaveButtonPressed), parent);
 
 	add_name_to_list(name_list, name);
 
