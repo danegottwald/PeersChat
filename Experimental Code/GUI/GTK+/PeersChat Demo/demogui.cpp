@@ -76,13 +76,21 @@ void add_name_to_list(GtkWidget *list, gchar *name)
 {
 	GtkWidget *new_row;
 	GtkWidget *name_label;
-
-	new_row = gtk_list_box_row_new();
-
-	name_label = gtk_label_new(name);
-	gtk_container_add(GTK_CONTAINER(list), name_label);
-
+	GtkWidget *kick_button;
+	GtkWidget *mute_button;
+	
+	new_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+	gtk_widget_set_name(new_row, name);
 	gtk_container_add(GTK_CONTAINER(list), new_row);
+	
+	name_label = gtk_label_new(name);
+	gtk_box_pack_start(GTK_BOX(new_row), name_label, FALSE, FALSE, FALSE);
+	
+	kick_button = gtk_button_new_with_label("Kick");
+	gtk_box_pack_end(GTK_BOX(new_row), kick_button, FALSE, FALSE, FALSE);
+	
+	mute_button = gtk_button_new_with_label("Mute");
+	gtk_box_pack_end(GTK_BOX(new_row), mute_button, FALSE, FALSE, FALSE);	
 }
 
 void leaveButtonPressed(GtkWidget *widget, gpointer data)
