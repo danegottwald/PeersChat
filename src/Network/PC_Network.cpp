@@ -1,3 +1,4 @@
+// This Library was written in its entirety by Omar Ahmadyar (oahmadyar@gmail.com)
 #include "PC_Network.hpp"
 
 
@@ -12,6 +13,7 @@ using namespace std::chrono_literals;
 
 // Globals -------------------------------------------------------------------------------
 std::chrono::milliseconds PACKET_DELAY = 50ms;
+std::chrono::milliseconds PEERS_CHAT_NETWORK_DESTRUCT_TIMEOUT = 1000ms;
 
 
 // Exceptions ----------------------------------------------------------------------------
@@ -30,6 +32,12 @@ struct IPStrNotNullTerm : std::exception {
 struct InvalidIPAddr : std::exception {
 	const char* what() const noexcept { return "PC_Network.cpp ERROR: IP Address String is not a valid IPv4 Address.\n"; }
 };
+struct InvalidRecvAmount : std::exception {
+	const char* what() const noexcept { return "PC_Network.cpp ERROR: Invalid Read Amount.\n"; }
+};
+struct InvalidResponse : std::exception {
+	const char* what() const noexcept { return "PC_Network.cpp ERROR: Invalid Response.\n"; }
+};
 
 
 
@@ -44,8 +52,8 @@ struct InvalidIPAddr : std::exception {
  *              for data where guaranteed delivery is important... pretty much
  *              everything except for audio.
  *
- * @member udp_dest  Destination address for this peer's UDP socket. Audio
- *                   data sent over @udp will be sent to this address.
+ * @member destination  Destination address for this peer's UDP socket. Audio
+ *                      data sent over @udp will be sent to this address.
  *
  * @member in_packets  Priority queue of type @AudioInPacket ordered by
  *                     @packet_id such that popping off an element will get you
@@ -87,8 +95,8 @@ int NPeer::udp = -1;
 // Constructor
 NPeer::NPeer() noexcept : in_packets(AudioInPacket_greater)
 {
-	std::memset((void*)&(this->udp_dest), 0, sizeof(sockaddr_in));
-	udp_dest.sin_family = AF_INET;
+	std::memset((void*)&(this->destination), 0, sizeof(sockaddr_in));
+	destination.sin_family = AF_INET;
 }
 
 
@@ -101,8 +109,14 @@ NPeer::NPeer(const char *ip, const uint16_t &port) : NPeer()
 		else if(i == IP_LEN) throw IPStrNotNullTerm();
 	}
 
-	if(inet_pton(AF_INET, ip, &(this->udp_dest.sin_addr)) != 1) throw InvalidIPAddr();
-	this->udp_dest.sin_port = htons(port);
+	if(inet_pton(AF_INET, ip, &(this->destination.sin_addr)) != 1) throw InvalidIPAddr();
+	this->destination.sin_port = htons(port);
+}
+
+
+Npeer(sockaddr_in *addr)
+{
+	//TODO
 }
 
 
@@ -344,7 +358,7 @@ void NPeer::send_audio_over_network_thread() noexcept
 		packet->packet_len += SENDV_SIZE;
 		__attribute__((unused)) ssize_t sent = sendto(udp, packet->packet.get(),
 		                                              packet->packet_len, 0,
-		                                              (const sockaddr*) &udp_dest, sizeof(udp_dest));
+		                                              (const sockaddr*) &destination, sizeof(destination));
 		#ifdef DEBUG
 		if(sent != packet->packet_len)
 		{
@@ -355,3 +369,277 @@ void NPeer::send_audio_over_network_thread() noexcept
 }
 
 
+bool NPeer::createTCP(sockaddr_in *addr)
+{
+	//TODO
+}
+
+
+void NPeer::destroyTCP()
+{
+	//TODO
+}
+
+
+// PeersChatNetwork Definitions ----------------------------------------------------------
+// Static Helpers
+static ssize_t send_timeout(int sockfd, const void *buf, size_t len, int flags)
+{
+	//TODO
+}
+
+
+static ssize_t recv_timeout(int sockfd, void *buf, size_t len, int flags);
+{
+	//TODO
+}
+
+
+// Constructors
+PeersChatNetwork::PeersChatNetwork()
+{
+	peers.reserve(128);
+}
+
+
+PeersChatNetwork::~PeersChatNetwork()
+{
+	this->stop();
+}
+
+
+// Operators
+NPeer* operator[](sockaddr_in *addr)
+{
+	//TODO
+}
+
+
+// Public Functions
+bool join(sockaddr_in *addr)
+{
+	//TODO
+}
+
+
+int host()
+{
+	//TODO
+}
+
+
+void PeersChatNetwork::start()
+{
+	run_listen_thread = true;
+	listen_thread.reset(new std::thread(&PeersChatNetwork::listen_on_tcp_thread, this));
+}
+
+
+void PeersChatNetwork::stop()
+{
+	run_listen_thread = false;
+	for(std::unique_ptr<NPeer> &nptr : this->peers)
+		nptr->stopNetStream();
+	std::this_thread::sleep_for(PEERS_CHAT_DESTRUCT_TIMEOUT);
+	listen_thread.reset();
+}
+
+
+bool PeersChatNetwork::propose(sockaddr_in *subject, int sock)
+{
+	// Tag Type of Request
+	uint8_t buffer[7];
+	buffer[0] = PROPOSE;
+
+	// Attach IP Address of subject
+	union {
+		uint32_t addr;
+		uint8_t  byte[4];
+	} ip;
+	ip.addr = subject->sin_addr.s_addr;
+	buffer[1] = ip.byte[0];
+	buffer[2] = ip.byte[1];
+	buffer[3] = ip.byte[2];
+	buffer[4] = ip.byte[3];
+
+	// Attach Port Num of subject
+	union {
+		uint16_t num;
+		uint8_t  byte[2];
+	} port;
+	port.num = subject->sin_port;
+	buffer[5] = port.byte[0];
+	buffer[6] = port.byte[1];
+
+	// Send Proposal
+	if(7 != send_timeout(sock, buffer, 7, MSG_NOSIGNAL))
+		return false;
+	else return true;
+}
+
+
+bool respond(bool decision, int sock)
+{
+	uint8_t buff;
+	if(decision) buff = ACCEPT;
+	else buff = DENY;
+
+	if(1 != send_timeout(sock, &buff, 1, MSG_NOSIGNAL))
+		return false;
+	else return true;
+}
+
+
+bool getResponse(int sock)
+{
+	uint8_t buff;
+	if(1 != recv_timeout(sock, &buff, 1, MSG_WAITALL))
+		throw InvalidRecvAmount();
+	if (buff == ACCEPT)
+		return true;
+	else if (buff == DENY)
+		return false;
+	else
+		throw InvalidResponse();
+}
+
+
+bool PeersChatNetwork::addPeer(sockaddr_in *addr)
+{
+	this->peers.emplace_back(new NPeer(addr));
+	((*this)[addr])->startNPeer();
+}
+
+
+bool PeersChatNetwork::requestPeers(int sock, std::vector<sockaddr_in> &peers)
+{
+	uint8_t buffer[BUFFER_SIZE];
+
+	// Send REQP
+	buffer[0] = REQP;
+	ssize_t s = send_timeout(sock, buffer, 1, MSG_NOSIGNAL);
+	if(1 != s) return false;
+
+	// Receive SENDP and Content Length
+	s = recv_timeout(sock, buffer, 5, MSG_WAITALL);
+	if(s != 5) return false;
+	if(buffer[0] != SENDP) return false;
+	uint32_t content_length = (buffer[1] << 24) | (buffer[2] << 16) | (buffer[3] << 8) | (buffer[4]);
+
+	// Loop Over Addresses & Add to Vector
+	auto min = [](const ssize_t &a, const ssize_t &b) { return (a<b)?a:b; }
+	union { uint16_t num; uint8_t byte[2]; } port;
+	union { uint32_t num; uint8_t byte[4]; } ip;
+	sockaddr_in addr;
+	ssize_t total = 0;
+	while(total < content_length)
+	{
+		// Receive Data
+		s = recv_timeout(sock, buffer, min(BUFFER_SIZE, content_length-total), MSG_WAITALL);
+		if (s < 0) return false;
+		else if(s % 6 != 0) return false;
+		total += s;
+
+		// Add each address to vector
+		for(ssize_t pos = 0; pos < s; pos += 6)
+		{
+			port.byte[0] = buffer[pos + 0];
+			port.byte[1] = buffer[pos + 1];
+			port.byte[2] = buffer[pos + 2];
+			port.byte[3] = buffer[pos + 3];
+			in.byte[0]   = buffer[pos + 4];
+			in.byte[1]   = buffer[pos + 5];
+			addr.sin_family = AF_INET;
+			addr.sin_addr.s_addr = port.num;
+			addr.sin_port = ip.num;
+			peers.push_back(addr);
+		}
+	}
+	return true;
+}
+
+
+void PeersChatNetwork::sendPeers(int sock)
+{
+	uint8_t buffer[BUFFER_SIZE];
+
+	// Tag Type
+	buffer[0] = SENDP;
+
+	// Unions
+	union { uint32_t num; uint8_t byte[4]; } word;
+	union { uint16_t num; uint8_t byte[2]; } port;
+
+	// Add Content Length
+	uint32_t content_length = this->peers.size() * 6;
+	word.num = htonl(content_length);
+	buffer[1] = word.num[0];
+	buffer[2] = word.num[1];
+	buffer[3] = word.num[2];
+	buffer[4] = word.num[3];
+
+	// Populate With Peers
+	uint32_t pos = 5;
+	for(std::unique_ptr<NPeer> &ptr : this->peers)
+	{
+		sockaddr_in addr = NPeerAttorney::getDest(ptr.get());
+		word.num = addr.sin_addr.s_addr;
+		port.num = addr.sin_port;
+		buffer[pos + 0] = word.byte[0];
+		buffer[pos + 1] = word.byte[1];
+		buffer[pos + 2] = word.byte[2];
+		buffer[pos + 3] = word.byte[3];
+		buffer[pos + 4] = port.byte[0];
+		buffer[pos + 5] = port.byte[1];
+		pos += 6;
+	}
+	ssize_t size = send_timeout(sock, buffer, content_length + 5, MSG_NOSIGNAL);
+}
+
+
+void PeersChatNetwork::disconnect()
+{
+	//TODO
+}
+
+
+void PeersChatNetwork::receive_audio_thread()
+{
+	uint8_t buffer[BUFFER_SIZE];
+
+	ssize_t r = 0;
+	sockaddr_in addr;
+	while(run_listen_thread)
+	{
+		memset(addr, 0, sizeof(addr));
+
+		// Receive Packet
+		r = recvfrom(NPeerAttorney::getUDP(), buffer, BUFFER_SIZE,
+		             MSG_WAITALL, (sockaddr*) &addr, sizeof(addr));
+		if(r < 0) continue;
+		if(buffer[0] != SENDV) continue;
+
+		// Sort
+		NPeer *peer = (*this)[addr];
+
+		// Get Empty Packet
+		AudioInPacket *pack = peer->getEmptyInPacket();
+
+		// Set Packet ID, Packet Length, and Copy Data
+		pack->packet_id  = (buffer[1] << 24) | (buffer[2] << 16) | (buffer[3] << 8) | (buffer[4]);
+		pack->packet_len = (buffer[5] << 24) | (buffer[6] << 16) | (buffer[7] << 8) | (buffer[8]);
+		std::memcpy(pack->packet.get(), buffer + 9, pack->packet_len);
+
+		// Queue
+		peer->enqueue_in(pack);
+	}
+}
+
+
+void PeersChatNetwork::listen_on_tcp_thread()
+{
+	//TODO
+}
+
+
+// This Library was written in its entirety by Omar Ahmadyar (oahmadyar@gmail.com)

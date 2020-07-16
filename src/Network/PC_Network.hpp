@@ -1,3 +1,5 @@
+// This Library was written in its entirety by Omar Ahmadyar (oahmadyar@gmail.com).
+
 #ifndef _PC_NETWORK_HPP
 #define _PC_NETWORK_HPP
 
@@ -165,11 +167,11 @@ class NPeer
 {
 	// Members
 private:
-		// UDP Socket for audio to/from everyone | TCP Socket for comms to this Peer
-	static int udp;
 	int tcp = -1;
+		// UDP Socket for audio to/from everyone | TCP Socket for comms to this Peer
+	static int udp = -1;
 		// Peer Address
-	sockaddr_in udp_dest;
+	sockaddr_in destination;
 		// Audio Incoming
 	std::priority_queue<std::unique_ptr<AudioInPacket>,
 	                    std::vector<std::unique_ptr<AudioInPacket>>,
@@ -191,6 +193,7 @@ private:
 public:
 	NPeer() noexcept;
 	NPeer(const char* ip, const uint16_t &port);
+	NPeer(sockaddr_in *addr);
 	~NPeer() noexcept;
 
 	// Sending Audio -- All the functions you need to send audio
@@ -208,12 +211,77 @@ public:
 
 	// Outgoing Audio Network Thread w/ Sending Audio Functions
 private:
+	std::thread audio_out_thread;
 	static bool create_udp_socket() noexcept;
 	AudioOutPacket* getAudioOutPacket() noexcept;
 	void retireEmptyOutPacket(AudioOutPacket * &packet) noexcept;
 	void send_audio_over_network_thread() noexcept;
+
+	// Connections over TCP
+	int createTCP(sockaddr_in *addr);
+	void destroyTCP();
+	inline sockaddr_in getDest() { return destination; }
+	friend class NPeerAttorney;
+};
+
+
+class NPeerAttorney
+{
+	static inline bool createTCP(NPeer *peer, sockkaddr_in *addr) {
+		return peer->createTCP(addr);
+	}
+	static inline void destroyTCP(NPeer *peer) {
+		peer->destroyTCP();
+	}
+	static inline sockaddr_in* getDest(NPeer *peer) {
+		return peer->getDest();
+	}
+	static inline int getUDP() { return NPeer::udp; }
+	friend class PeersChatNetwork;
+}
+
+
+/*
+ *
+ */
+class PeersChatNetwork
+{
+	// Members
+private:
+	std::vector<std::unique_ptr<NPeer>> peers;
+	int tcp_listen = -1;
+	bool accept_direct_join = false;
+	bool accept_indirect_join = true;
+	bool run_listen_thread = false;
+	std::unique_ptr<std::thread> listen_thread;
+
+public:
+	PeersChatNetwork();
+	~PeersChatNetwork();
+
+	NPeer* operator[](sockaddr_in &addr);
+	NPeer* operator[](const int &x);
+
+	bool join(sockaddr_in *addr);
+	bool host();
+	void start();
+	void stop();
+	inline int getNumberPeers() { return peers.size(); }
+
+private:
+	bool propose(sockaddr_in *subject, int sock); //ask peer if subject can join
+	bool respond(bool decision, int sock); //accept/deny
+	bool getResponse(int sock); //get accept/deny w/ timeout
+	bool addPeer(sockaddr_in *addr); //new person joining group, add them
+	bool requestPeers(int sock, std::vector<sockaddr_in>& provide_empty_vector); //request a peers peers
+	void sendPeers(int sock);
+	void disconnect();
+
+	void receive_audio_thread(); //thread that receives audio
+	void listen_on_tcp_thread();
 };
 
 
 #endif
+// This Library was written in its entirety by Omar Ahmadyar (oahmadyar@gmail.com).
 
