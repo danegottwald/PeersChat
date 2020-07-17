@@ -7,8 +7,49 @@
 
 
 /*
- *  PeersChat Networking Header
- *  TODO: Documentation
+ *  PeersChat Networking Header: A Library to handle all PeersChat Networking
+ *
+ * There are a few different classes/structs to be aware of in this Library:
+ *
+ *    AudioPacket: A struct that is used to pass around AudioPackets in buffers.
+ *
+ *      AudioInPacket/AudioOutPacket are derivative child structs that inherit from
+ *      AudioPacket.  Don't concern yourself with their differences, the main reason
+ *      for the difference in name is to cause a compiler error when you mix them
+ *
+ *    NPeer: A class used to maintain communications with a single peer.  Contains several
+ *           Queue's to handle Packets going in and out over network.  Ensures that
+ *           you don't get packets out of order.  Handles sending audio for you.  Will
+ *           provide you with audio as long as some producer is retrieving them from
+ *           network.
+ *
+ *    PeersChatNetwork: A class used to handle all networking in PeersChat.  Contains
+ *                      some amount of NPeer objects dependent upon how many people you
+ *                      are connected to.  Will handle people joining/leaving a call and
+ *                      other things.  Will retrieve audio packets from the network and
+ *                      pass them off to their respective NPeer objects based on who sent
+ *                      the packet.
+ *
+ *
+ *
+ * How to use this Library as:
+ *    An Audio Encoder Library:  Whenever you have encoded audio you want to send, go
+ *                               ahead and access the NPeer objects in the
+ *                               PeersChatNetworking object and request empty
+ *                               AudioOutPacket's from each of them.  Then fill it with
+ *                               data and enqueue_out them.
+ *                               Whenever you want to retrieve encoded audio from your
+ *                               peers, loop over all the NPeers in the PeersChatNetwork
+ *                               object and getAudioInPacket from all of them.  You can
+ *                               merge and decode the audio and queue it up to play out
+ *                               the speaker.  Whenever that's done, recycle the now
+ *                               processed AudioInPackets so they can be recirculated.
+ *
+ *   A GUI/Main Thread:  Whatever requests you have you can link to the public functions
+ *                       made available to you through the PeersChatNetwork class.  Join,
+ *                       host, etc. by calling the respective functions.
+ *
+ *
  */
 
 
