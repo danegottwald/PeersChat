@@ -27,9 +27,17 @@ void join_callback(GtkWidget *widget, gpointer data)
 	gh->joinButtonPressed(widget, widget_box);
 }
 
+void volume_callback(GtkVolumeButton *v1, gdouble value, gpointer data)
+{
+	PC_GuiHandler* gh = static_cast<PC_GuiHandler*>(data);
+	GtkWidget* widget_box = gh->get_widget_box();
+	gh->outputVolChanged(v1, value, widget_box);
+}
+
 void leave_callback(GtkWidget *widget, gpointer data) 
 {
 	PC_GuiHandler* gh = static_cast<PC_GuiHandler*>(data);
 	GtkWidget* widget_box = gh->get_widget_box();
 	gh->leaveButtonPressed(widget, widget_box);
 }
+
