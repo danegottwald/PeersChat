@@ -87,6 +87,32 @@ struct InvalidResponse : std::exception {
  * @member out_packet_id  Next id that will be assigned to @packet_id in
  *                        @AudioPacket.  Handles sequentially numbering packets.
  *
+ * @member run_thread  (bool) True if you want the audio out net stream thread to run
+ *
+ * @member out_packet_count  The number of outgoing packet's queue'd for delivery
+ *
+ * @member audio_out_thread  std::thread for the audio_out_thread that handles sending
+ *                           audio packets
+ *
+ * @method (static) create_udp_socket  Creates/initializes a udp socket
+ *
+ * @method getAudioOutPacket  Get AudioOutPacket that is populated with audio packet data.
+ *                            The data should be provided by the client audio processor
+ *                            from the microphone.
+ *                           @return A pointer to an AudioOutPacket or NULL pointer
+ *
+ * @method retireEmptyOutPacket  Retire an AudioOutPacket that isn't needed anymore so
+ *                               it can be recylced later.
+ *                              @param packet  A pointer to the AudioOutPacket
+ *
+ * @method send_audio_over_network_thread  Function designed to run on its own thread
+ *                                         to handle the sending of audio.
+ *
+ * @method createTCP  Create a TCP connection to this specific NPeer
+ *                   @return (bool) True if the operation was successful
+ *
+ * @method getDest()  Returns sockaddr_in struct that represents NPeer address
+ *
  */
 // Static Initialization
 int NPeer::udp = -1;
@@ -114,9 +140,10 @@ NPeer::NPeer(const char *ip, const uint16_t &port) : NPeer()
 }
 
 
-Npeer(sockaddr_in *addr)
+Npeer(sockaddr_in &addr) : NPeer()
 {
-	//TODO
+	this->destination.sin_port = addr.sin_port;
+	this->destination.sin_addr = addr.sin_addr;
 }
 
 
@@ -249,6 +276,13 @@ AudioInPacket* NPeer::getAudioInPacket() noexcept
 }
 
 
+bool NPeer::operator==(const sockaddr_in &addr) noexcept
+{
+	return (destination.sin_port        == addr.sin_port) &&
+	       (destination.sin_addr.s_addr == addr.sin_addr.s_addr);
+}
+
+
 bool NPeer::create_udp_socket() noexcept
 {
 	if (udp > 0) close(udp);
@@ -263,12 +297,6 @@ bool NPeer::create_udp_socket() noexcept
 }
 
 
-/*
- * Get @AudioOutPacket that is populated with audio packet data.  The data should be
- * provided by the client audio processor from the microphone.
- *
- * @return  A pointer to an AudioOutPacket OR a NULL pointer if none are available.
- */
 AudioOutPacket* NPeer::getAudioOutPacket() noexcept
 {
 	AudioOutPacket* packet = NULL;
@@ -285,11 +313,6 @@ AudioOutPacket* NPeer::getAudioOutPacket() noexcept
 }
 
 
-/*
- * Retire an AudioOutPacket that isn't needed anymore so it can be recylced later.
- *
- * @param packet  A pointer to the AudioOutPacket.
- */
 void NPeer::retireEmptyOutPacket(AudioOutPacket * &packet) noexcept
 {
 	out_bucket_lock.lock();
@@ -369,15 +392,22 @@ void NPeer::send_audio_over_network_thread() noexcept
 }
 
 
-bool NPeer::createTCP(sockaddr_in *addr)
+bool NPeer::createTCP()
 {
-	//TODO
+	if((this->tcp = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+		return false;
+
+	if(connect(this->tcp, (sockaddr*) &destination, sizeof(this->destination)) < 0)
+		return false;
+
+	return true;
 }
 
 
 void NPeer::destroyTCP()
 {
-	//TODO
+	close(this->tcp);
+	this->tcp = -1;
 }
 
 
@@ -398,7 +428,7 @@ static ssize_t recv_timeout(int sockfd, void *buf, size_t len, int flags);
 // Constructors
 PeersChatNetwork::PeersChatNetwork()
 {
-	peers.reserve(128);
+	peers.reserve(MAX_PEERS);
 }
 
 
@@ -409,20 +439,74 @@ PeersChatNetwork::~PeersChatNetwork()
 
 
 // Operators
-NPeer* operator[](sockaddr_in *addr)
+NPeer* PeersChatNetwork::operator[](sockaddr_in &addr)
 {
-	//TODO
+	for(int i = 0; i < peers.size(); ++i)
+		if(peers[i].get() == addr)
+			return peers[i];
+	return NULL;
+}
+
+
+NPeer* PeersChatNetwork::operator[](const int &x)
+{
+	if(x < 0 || x >= peers.size())
+		return NULL;
+	return peers[x];
 }
 
 
 // Public Functions
-bool join(sockaddr_in *addr)
+bool PeersChatNetwork::join(sockaddr_in &addr)
 {
-	//TODO
+	if(this->peers.size() != 0) return false;
+
+	// Create NPeer
+	NPeer *peer = new NPeer(addr);
+
+	// Create TCP Connection to Peer
+	if(!NPeerAttorney::createTCP(peer)) return false;
+
+	// Get TCP socket
+	int tcp = getTCP(peer);
+
+	// Request to Connect
+	connect(tcp);
+
+	// Get Response
+	try
+	{
+		if(!getResponse(tcp))
+		{
+			destroyTCP(peer);
+			return false;
+		}
+	} catch(const std::exception &ex)
+	{
+		std::cerr << ex.what();
+		destroyTCP(tcp);
+		return false;
+	}
+
+	// Request Peers
+	std::vector<sockaddr_in> peer_addr;
+	requestPeers(tcp, peer_addr);
+
+	// Add Peers
+	this->peers.emplace_back(peer);
+	peer->startNetStream()
+	for(int i = 0; i < peer_addr.size(); ++i)
+	{
+		NPeer *p = new NPeer(peer_addr[i]);
+		this->peers.emplace_back(p);
+		p->startNetStream();
+	}
+
+	return true;
 }
 
 
-int host()
+int PeersChatNetwork::host()
 {
 	//TODO
 }
@@ -430,6 +514,7 @@ int host()
 
 void PeersChatNetwork::start()
 {
+	//TODO
 	run_listen_thread = true;
 	listen_thread.reset(new std::thread(&PeersChatNetwork::listen_on_tcp_thread, this));
 }
@@ -437,6 +522,7 @@ void PeersChatNetwork::start()
 
 void PeersChatNetwork::stop()
 {
+	//TODO
 	run_listen_thread = false;
 	for(std::unique_ptr<NPeer> &nptr : this->peers)
 		nptr->stopNetStream();
@@ -445,7 +531,7 @@ void PeersChatNetwork::stop()
 }
 
 
-bool PeersChatNetwork::propose(sockaddr_in *subject, int sock)
+bool PeersChatNetwork::propose(sockaddr_in &subject, int sock)
 {
 	// Tag Type of Request
 	uint8_t buffer[7];
@@ -456,7 +542,7 @@ bool PeersChatNetwork::propose(sockaddr_in *subject, int sock)
 		uint32_t addr;
 		uint8_t  byte[4];
 	} ip;
-	ip.addr = subject->sin_addr.s_addr;
+	ip.addr = subject.sin_addr.s_addr;
 	buffer[1] = ip.byte[0];
 	buffer[2] = ip.byte[1];
 	buffer[3] = ip.byte[2];
@@ -467,7 +553,7 @@ bool PeersChatNetwork::propose(sockaddr_in *subject, int sock)
 		uint16_t num;
 		uint8_t  byte[2];
 	} port;
-	port.num = subject->sin_port;
+	port.num = subject.sin_port;
 	buffer[5] = port.byte[0];
 	buffer[6] = port.byte[1];
 
@@ -497,17 +583,16 @@ bool getResponse(int sock)
 		throw InvalidRecvAmount();
 	if (buff == ACCEPT)
 		return true;
-	else if (buff == DENY)
-		return false;
-	else
-		throw InvalidResponse();
+	return false;
 }
 
 
-bool PeersChatNetwork::addPeer(sockaddr_in *addr)
+bool PeersChatNetwork::addPeer(sockaddr_in &addr)
 {
-	this->peers.emplace_back(new NPeer(addr));
-	((*this)[addr])->startNPeer();
+	NPeer *peer = new NPeer(addr);
+	peer->startNetStream();
+	this->peers.emplace_back(peer);
+	return true;
 }
 
 
@@ -597,9 +682,17 @@ void PeersChatNetwork::sendPeers(int sock)
 }
 
 
-void PeersChatNetwork::disconnect()
+void PeersChatNetwork::connect(int sock)
 {
-	//TODO
+	uint8_t buff = CONNECT;
+	send_timeout(sock, &buff, 1, MSG_NOSIGNAL);
+}
+
+
+void PeersChatNetwork::disconnect(int sock)
+{
+	uint8_t buff = DISCONNECT;
+	send_timeout(sock, &buff, 1, MSG_NOSIGNAL);
 }
 
 
@@ -623,7 +716,8 @@ void PeersChatNetwork::receive_audio_thread()
 		NPeer *peer = (*this)[addr];
 
 		// Get Empty Packet
-		AudioInPacket *pack = peer->getEmptyInPacket();
+		std::unique_ptr<AudioInPacket> pack;
+		pack.reset(peer->getEmptyInPacket());
 
 		// Set Packet ID, Packet Length, and Copy Data
 		pack->packet_id  = (buffer[1] << 24) | (buffer[2] << 16) | (buffer[3] << 8) | (buffer[4]);

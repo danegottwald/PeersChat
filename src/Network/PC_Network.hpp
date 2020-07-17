@@ -56,6 +56,7 @@
 
 // Pre-Compiler Constants
 #define BUFFER_SIZE 4096
+#define MAX_PEERS 64
 
 
 // Globals
@@ -162,6 +163,11 @@ inline bool AudioInPacket_greater(const std::unique_ptr<AudioInPacket> &left, co
  *                              AudioInPacket *packet = getAudioInPacket();
  *                              int packets_lost = packet->packet_id - lastId - 1;
  *
+ * @operator ==(1)  Equivalence operator.  Compare an address to see if this NPeer routes
+ *                  to that address.
+ *                 @param addr (sockaddr_in)  Adress you want to check equivalence with
+ *                 @return (bool) true if the addresses match, false otherwise
+ *
  */
 class NPeer
 {
@@ -193,7 +199,7 @@ private:
 public:
 	NPeer() noexcept;
 	NPeer(const char* ip, const uint16_t &port);
-	NPeer(sockaddr_in *addr);
+	NPeer(sockaddr_in &addr);
 	~NPeer() noexcept;
 
 	// Sending Audio -- All the functions you need to send audio
@@ -209,6 +215,9 @@ public:
 	AudioInPacket* getAudioInPacket() noexcept;
 	inline uint32_t getInPacketId() noexcept { return in_packet_id; }
 
+	// Equivalence Operator
+	bool operator==(const sockaddr_in &addr) noexcept;
+
 	// Outgoing Audio Network Thread w/ Sending Audio Functions
 private:
 	std::thread audio_out_thread;
@@ -218,7 +227,7 @@ private:
 	void send_audio_over_network_thread() noexcept;
 
 	// Connections over TCP
-	int createTCP(sockaddr_in *addr);
+	bool createTCP();
 	void destroyTCP();
 	inline sockaddr_in getDest() { return destination; }
 	friend class NPeerAttorney;
@@ -227,8 +236,8 @@ private:
 
 class NPeerAttorney
 {
-	static inline bool createTCP(NPeer *peer, sockkaddr_in *addr) {
-		return peer->createTCP(addr);
+	static inline bool createTCP(NPeer *peer) {
+		return peer->createTCP();
 	}
 	static inline void destroyTCP(NPeer *peer) {
 		peer->destroyTCP();
@@ -237,11 +246,73 @@ class NPeerAttorney
 		return peer->getDest();
 	}
 	static inline int getUDP() { return NPeer::udp; }
+	static inline int getTCP(NPeer *peer) { return NPeer->tcp; }
 	friend class PeersChatNetwork;
 }
 
 
-/*
+// PeersChatNetwork Class ----------------------------------------------------------------
+/* PeersChatNetwork: A Class that handles all your PeersChat networking needs
+ *
+Members:
+ * peers  Vector of NPeers that we are in a call with
+ *
+ * tcp_listen  Socket we are listening for tcp requests on
+ * accept_direct_join  Flag that indicates whether we are going to allow people to join
+ *                     the call through this client.
+ *
+ * accept_indirect_join  Flag that indicates whether we are going to allow anybody to join
+ *                       the call at all
+ *
+ * running  Flag that indicates whether PeersChatNetwork is currently running
+ *
+ *
+Constructors:
+ * PeersChatNetwork()  Create PeersChatNetwork Object
+ * ~PeersChatNetwork()  Destroy PeersChatNetwork Object
+ *
+Operators:
+ * operator[sockaddr_in]  Return the a pointer to the NPeer object corresonpding to a
+ *                        specific destination address
+ *
+ * operator[int]  Return the pointer to the Npeer object stored at position x.  Useful
+ *                for looping through all NPeer objects.
+ *
+ *
+Public Methods:
+ * join(sockaddr_in)  Join a PeersChat session using a sockaddr_in struct as the dest
+ *
+ * host()  Host your own PeersChat session
+ *
+ * start()  Start Receiving Audio and listening for connections
+ *
+ * stop()  Stop Receiving Audio and listening for connections
+ *
+ * getNumberPeers()  Get number of other peers.  Useful for looping over them.
+ *
+ *
+Private Methods:
+ * propose(sockaddr_in, int)  Ask currently connected peer(int) if person represented
+ *                            by sockaddr_in can join
+ *
+ * respond(bool, int)  ACCEPT/DECLINE currently connected peer's(int) last statement
+ *
+ * getResponse(int)  Find out if they accepted or declined your request
+ *
+ * addPeer(sockaddr_in)  Add new member to your PeersChatNetwork as an NPeer
+ *
+ * requestPeers(int, std::vector<sockaddr_in>)  Ask for peer's entire peer list
+ *
+ * sendPeers(int) Send all your peers to peer at socket(int)
+ *
+ * connect(int)  Ask to connect to client at socket(int)
+ *
+ * disconnect(int)  Tell peer at socket(int) you are disconnecting
+ *
+ * receive_audio_thread  Function to start in its own thread to receive audio
+ *
+ * listen_on_tcp_thread  Function to start in its own thread to listen for any
+ *                       tcp connections/requests.
  *
  */
 class PeersChatNetwork
@@ -252,7 +323,7 @@ private:
 	int tcp_listen = -1;
 	bool accept_direct_join = false;
 	bool accept_indirect_join = true;
-	bool run_listen_thread = false;
+	bool running = false;
 	std::unique_ptr<std::thread> listen_thread;
 
 public:
@@ -262,20 +333,21 @@ public:
 	NPeer* operator[](sockaddr_in &addr);
 	NPeer* operator[](const int &x);
 
-	bool join(sockaddr_in *addr);
+	bool join(sockaddr_in &addr);
 	bool host();
 	void start();
 	void stop();
 	inline int getNumberPeers() { return peers.size(); }
 
 private:
-	bool propose(sockaddr_in *subject, int sock); //ask peer if subject can join
+	bool propose(sockaddr_in &subject, int sock); //ask peer if subject can join
 	bool respond(bool decision, int sock); //accept/deny
 	bool getResponse(int sock); //get accept/deny w/ timeout
-	bool addPeer(sockaddr_in *addr); //new person joining group, add them
+	bool addPeer(sockaddr_in &addr); //new person joining group, add them
 	bool requestPeers(int sock, std::vector<sockaddr_in>& provide_empty_vector); //request a peers peers
 	void sendPeers(int sock);
-	void disconnect();
+	void connect(int sock);
+	void disconnect(int sock);
 
 	void receive_audio_thread(); //thread that receives audio
 	void listen_on_tcp_thread();
