@@ -95,10 +95,17 @@ void add_name_to_list(GtkWidget *list, gchar *name)
 
 void leaveButtonPressed(GtkWidget *widget, gpointer data)
 {
-        g_print("Leave Button pressed\n");
-		GtkWidget *lobby_box = get_widget_by_name(GTK_WIDGET(data), "LobbyBox");
-		gtk_container_remove(GTK_CONTAINER(data), lobby_box);
-		gtk_widget_show_all(GTK_WIDGET(data));
+    g_print("Leave Button pressed\n");
+	GtkWidget *lobby_box = get_widget_by_name(GTK_WIDGET(data), "LobbyBox");
+	gtk_container_remove(GTK_CONTAINER(data), lobby_box);
+	gtk_widget_show_all(GTK_WIDGET(data));
+}
+
+// value = output volume on a scale from 0 to 1, 6 decimals by default
+ 
+void outputVolChanged(GtkVolumeButton *v1, gdouble value, gpointer data)
+{
+	g_print("Value = %f\n", value);
 }
 
 void setup_lobby(GtkWidget *parent, GtkWidget *lobby_box, gchar *name)
@@ -117,8 +124,24 @@ void setup_lobby(GtkWidget *parent, GtkWidget *lobby_box, gchar *name)
 	gtk_box_pack_end(GTK_BOX(lobby_box), leave_button, FALSE, FALSE, 0);
 	g_signal_connect(leave_button, "clicked", G_CALLBACK(leaveButtonPressed), parent);
 
-	add_name_to_list(name_list, name);
 
+	// new box with output label and slider
+
+	GtkWidget *outputBox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, DEFAULT_WIDGET_PADDING);
+	gtk_widget_set_name(outputBox, "outputBox");
+	gtk_widget_set_vexpand(outputBox, TRUE);
+	gtk_box_pack_end(GTK_BOX(lobby_box), outputBox, FALSE, FALSE, 0);
+	gtk_container_add(GTK_CONTAINER(lobby_box), lobby_box);
+	
+	GtkWidget *outputVol = gtk_volume_button_new();
+	gtk_box_pack_end(GTK_BOX(outputBox), outputVol, TRUE, FALSE, 0);
+	g_signal_connect(outputVol, "value-changed", G_CALLBACK(outputVolChanged), parent);
+
+	GtkWidget *outputLabel = gtk_label_new((const gchar*) "Output Volume");
+	gtk_box_pack_end(GTK_BOX(outputBox), outputLabel, FALSE, FALSE, 0);
+
+
+	add_name_to_list(name_list, name);
 	gtk_widget_show_all(lobby_box);
 }
 
@@ -144,7 +167,7 @@ void username_popup() {
 
 void hostButtonPressed(GtkWidget *widget, gpointer data)
 {
-        g_print("Host Button pressed\n");
+    g_print("Host Button pressed\n");
 	
 	gchar *name_text;
 
@@ -165,7 +188,7 @@ void hostButtonPressed(GtkWidget *widget, gpointer data)
 
 void joinButtonPressed(GtkWidget *widget, gpointer data)
 {
-        g_print("Join Button pressed\n");
+    g_print("Join Button pressed\n");
 
 	gchar *name_text;
 	gchar *link_text;
