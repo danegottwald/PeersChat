@@ -56,7 +56,6 @@
 
 
 /*
- * TODO: Modify this section for OS compatibility
  * This library is initially written for GNU/Linux systems
  * Includes will have to be moved in/out of guards for cross-platform support
  */
@@ -72,6 +71,9 @@
 
 #include <winsock2.h>
 #include <ws2tcpip.h>
+typedef ssize_t  int64_t;
+typedef size_t  uint64_t;
+static inline int close(int &x) { return closesocket(x); }
 
 #elif  __APPLE__
 
@@ -92,6 +94,8 @@
 #include <atomic>
 #include <exception>
 #include <thread>
+#include <stdio.h>
+#include <errno.h>
 #include "nettypes.hpp"
 
 
@@ -102,6 +106,7 @@
 
 // Globals
 extern std::chrono::milliseconds PACKET_DELAY; //defaults to 50ms
+extern int PORT;
 
 
 
@@ -261,7 +266,7 @@ public:
 
 	// Outgoing Audio Network Thread w/ Sending Audio Functions
 private:
-	std::thread audio_out_thread;
+	std::unique_ptr<std::thread> audio_out_thread;
 	static bool create_udp_socket() noexcept;
 	AudioOutPacket* getAudioOutPacket() noexcept;
 	void retireEmptyOutPacket(AudioOutPacket * &packet) noexcept;
@@ -366,6 +371,7 @@ private:
 	bool accept_indirect_join = true;
 	bool running = false;
 	std::unique_ptr<std::thread> listen_thread;
+	std::unique_ptr<std::thread> recv_thread;
 
 public:
 	PeersChatNetwork();
