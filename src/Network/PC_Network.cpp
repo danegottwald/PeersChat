@@ -426,6 +426,7 @@ bool NPeer::createTCP()
 
 void NPeer::destroyTCP()
 {
+	if(this->tcp < 0) return;
 	close(this->tcp);
 	this->tcp = -1;
 }
@@ -482,30 +483,32 @@ bool PeersChatNetwork::join(sockaddr_in &addr) noexcept
 	if(this->peers.size() != 0) return false;
 
 	// Create NPeer
-	NPeer *peer = new NPeer(addr);
+	std::unique_ptr<NPeer> peer;
+	peer.reset(new NPeer(addr));
 
 	// Create TCP Connection to Peer
-	if(!NPeerAttorney::createTCP(peer)) return false;
+	if(!NPeerAttorney::createTCP(peer.get())) return false;
 
 	// Get TCP socket
-	int tcp = getTCP(peer);
+	int tcp = getTCP(peer.get());
 
-	// Request to Connect
+	// Request to CONNECT
 	connect(tcp);
 
 	// Get Response
 	if(!getResponse(tcp))
 	{
-		destroyTCP(peer);
+		destroyTCP(peer.get());
 		return false;
 	}
 
 	// Request Peers
 	std::vector<sockaddr_in> peer_addr;
-	requestPeers(tcp, peer_addr);
+	if(!requestPeers(tcp, peer_addr))
+		return false;
 
 	// Add Peers
-	this->peers.emplace_back(peer);
+	this->peers.emplace_back(peer.release());
 	if(running) peer->startNetStream()
 	for(int i = 0; i < peer_addr.size(); ++i)
 	{
@@ -791,10 +794,11 @@ void PeersChatNetwork::listen_on_tcp_thread()
 {
 	int peer = -1;
 	uint8_t buffer[BUFFER_SIZE];
+	sockaddr_in addr;
 	while(running)
 	{
 		// Accept connection
-		if((peer = accept(tcp_listen, NULL, NULL)) < 0)
+		if((peer = accept(tcp_listen, addr, sizeof(addr))) < 0)
 		{
 			perror("PeersChatNetwork::listen_on_tcp_thread() accept: ");
 			continue;
@@ -810,18 +814,73 @@ void PeersChatNetwork::listen_on_tcp_thread()
 		// Handle Req Type
 		if(buffer[0] == CONNECT)
 		{
-			//TODO
+			connectFulfill(peer, addr);
 		}
 		else if(buffer[0] == PROPOSE)
 		{
 			//TODO
 		}
-		else if(buffer[0] == CLOSE)
-		{
-			close(peer);
-			continue;
-		}
+		close(peer);
+		continue;
 	}
+}
+
+
+bool connectFulfill(int new_member, sockaddr_in addr)
+{
+	bool connect = true;
+
+	// Open TCP to peers
+	std::vector<int> peer_fd;
+	for(std::unique_ptr<NPeer> p : this->peers)
+	{
+		connect &= NPeerAttorney::createTCP(p.get());
+		if(!connect) break;
+		peer_fd.push_back(NPeerAttorney::getTCP(p.get()));
+
+	}
+
+	// Close Them If Failed
+	if(!connect)
+	{
+		uint8_t buff = CLOSE;
+		for(const int &fd : peer_fd)
+		{
+			if(fd > 0)
+				send_timeout(fd, &buff, 1, MSG_NOSIGNAL);
+		}
+		for(auto &p : this->peers)
+			NPeerAttorney::destroyTCP(p.get());
+		return false;
+	}
+
+	// Propose letting new guy join to everyone else
+	for(const int &fd : peer_fd)
+		connect &= propose(addr, fd);
+
+	// Close Them if failed
+	if(!connect)
+	{
+		uint8_t buff = DENY;
+		for(const int &fd : peer_fd)
+			send_timeout(fd, &buff, 1, MSG_NOSIGNAL);
+		send_timeout(new_member, &buff, 1, MSG_NOSIGNAL);
+		return false;
+	}
+
+	// Receive REQP Request
+		//TODO
+
+	// Tell Peers You Accepted
+		//TODO
+
+	// SendP
+		//TODO
+
+	// Add Peer Yourself
+		//TODO
+
+	return true;
 }
 
 

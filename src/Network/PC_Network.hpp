@@ -398,6 +398,8 @@ private:
 
 	void receive_audio_thread(); //thread that receives audio
 	void listen_on_tcp_thread();
+
+	bool connectFulfill(int sock, sockaddr_in addr);
 };
 
 
