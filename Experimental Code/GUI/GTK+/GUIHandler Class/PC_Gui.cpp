@@ -1,16 +1,6 @@
 #include "GuiCallbacks.cpp"
 #include "PC_Gui.hpp"
 
-// Macros used for GtkWidget properties
-
-const int DEFAULT_WINDOW_WIDTH = 360;
-const int DEFAULT_WINDOW_HEIGHT = 240;
-
-// Window padding: pads around border of window
-const int DEFAULT_WINDOW_PADDING = 32;
-// Widget padding: pads between widgets
-const int DEFAULT_WIDGET_PADDING = 16;
-
 
 // Constructor
 PC_GuiHandler::PC_GuiHandler()
@@ -29,7 +19,7 @@ PC_GuiHandler::~PC_GuiHandler()
 }
 
 // Begins GUI event loop
-int PC_GuiHandler::RunGui(int argc, char *argv[])
+int PC_GuiHandler::runGui(int argc, char *argv[])
 {
 	// Run GUI through GtkApplication
 	int status;
