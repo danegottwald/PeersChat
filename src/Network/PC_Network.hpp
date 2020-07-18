@@ -85,6 +85,7 @@ static inline int close(int &x) { return closesocket(x); }
 // Universal Includes
 #include <iostream>
 #include <cstdint>
+#include <cinttypes>
 #include <cstring>
 #include <vector>
 #include <queue>
@@ -106,7 +107,7 @@ static inline int close(int &x) { return closesocket(x); }
 
 // Globals
 extern std::chrono::milliseconds PACKET_DELAY; //defaults to 50ms
-extern int PORT;
+extern uint16_t PORT;
 
 
 
@@ -221,7 +222,7 @@ class NPeer
 private:
 	int tcp = -1;
 		// UDP Socket for audio to/from everyone | TCP Socket for comms to this Peer
-	static int udp = -1;
+	static int udp;
 		// Peer Address
 	sockaddr_in destination;
 		// Audio Incoming
@@ -288,13 +289,13 @@ class NPeerAttorney
 	static inline void destroyTCP(NPeer *peer) {
 		peer->destroyTCP();
 	}
-	static inline sockaddr_in* getDest(NPeer *peer) {
+	static inline sockaddr_in getDest(NPeer *peer) {
 		return peer->getDest();
 	}
 	static inline int getUDP() { return NPeer::udp; }
-	static inline int getTCP(NPeer *peer) { return NPeer->tcp; }
+	static inline int getTCP(NPeer *peer) { return peer->tcp; }
 	friend class PeersChatNetwork;
-}
+};
 
 
 // PeersChatNetwork Class ----------------------------------------------------------------
@@ -377,13 +378,13 @@ public:
 	PeersChatNetwork();
 	~PeersChatNetwork();
 
-	NPeer* operator[](sockaddr_in &addr);
-	NPeer* operator[](const int &x);
+	NPeer* operator[](sockaddr_in &addr) noexcept;
+	NPeer* operator[](const int &x) noexcept;
 
-	bool join(sockaddr_in &addr);
-	bool host();
-	void start();
-	void stop();
+	bool join(sockaddr_in &addr) noexcept;
+	bool host() noexcept;
+	bool start() noexcept;
+	void stop() noexcept;
 	inline int getNumberPeers() { return peers.size(); }
 
 private:
@@ -400,6 +401,7 @@ private:
 	void listen_on_tcp_thread();
 
 	bool connectFulfill(int sock, sockaddr_in addr);
+	bool proposeFulfill(int sock, sockaddr_in addr);
 };
 
 
