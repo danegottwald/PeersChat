@@ -7,6 +7,7 @@ PC_GuiHandler::PC_GuiHandler()
 {
 	user_name = NULL;
 	user_link = NULL;
+	is_host = false;
 
 	app = gtk_application_new("edu.ucsc.PeersChat", G_APPLICATION_FLAGS_NONE);
 	g_signal_connect(app, "activate", G_CALLBACK(activate_callback), this);
@@ -85,8 +86,7 @@ void PC_GuiHandler::activate(GtkApplication *app, gpointer data)
 void PC_GuiHandler::hostButtonPressed(GtkWidget *widget, gpointer data)
 {	
 	gchar *name_text;
-
-	name_text = get_child_entry_text(GTK_WIDGET(data), "NameEntry");
+	name_text = get_user_name();
 	
 	if(!entry_text_is_valid(name_text))
 	{
@@ -95,6 +95,8 @@ void PC_GuiHandler::hostButtonPressed(GtkWidget *widget, gpointer data)
 	else
 	{
 		set_user_name(name_text);
+		
+		is_host = true;
 		
 		GtkWidget *lobby_box = NULL;
 		setup_lobby(GTK_WIDGET(data), lobby_box);
@@ -106,8 +108,8 @@ void PC_GuiHandler::joinButtonPressed(GtkWidget *widget, gpointer data)
 	gchar *name_text;
 	gchar *link_text;
 
-	name_text = get_child_entry_text(GTK_WIDGET(data), "NameEntry");
-	link_text = get_child_entry_text(GTK_WIDGET(data), "LinkEntry");	
+	name_text = get_user_name();
+	link_text = get_user_link();
 	
 	if(!entry_text_is_valid(name_text))
 	{
@@ -138,6 +140,40 @@ void PC_GuiHandler::leaveButtonPressed(GtkWidget *widget, gpointer data)
 
 // Utility functions used by GTK+ callback functions
 
+// Public access functions
+
+GtkWidget* PC_GuiHandler::get_widget_by_name(GtkWidget *container, const gchar *widget_name)
+{
+	GtkWidget *return_widget = NULL;
+	GList *widgets = gtk_container_get_children(GTK_CONTAINER(container));
+	
+	while(widgets != NULL)
+	{
+		const gchar *child_name = gtk_widget_get_name(GTK_WIDGET(widgets->data));
+		if(strcmp(widget_name, child_name) == 0)
+		{
+			return_widget = GTK_WIDGET(widgets->data);
+			break;
+		}
+		widgets = widgets->next;
+	}
+	
+	return return_widget;
+}	
+
+gchar* PC_GuiHandler::get_child_entry_text(GtkWidget *container, const gchar *entry_name)
+{
+	gchar *entry_text = NULL;
+
+	GtkWidget *entry_widget = get_widget_by_name(container, entry_name);
+	if(entry_widget != NULL) 
+	{
+		entry_text = const_cast<gchar*>(gtk_entry_get_text(GTK_ENTRY(entry_widget)));
+	}
+	
+	return entry_text;
+}
+
 GtkWidget* PC_GuiHandler::get_widget_box()
 {
 	return widget_box;
@@ -163,24 +199,7 @@ gchar* PC_GuiHandler::get_user_link()
 	return user_link;
 }
 
-GtkWidget* PC_GuiHandler::get_widget_by_name(GtkWidget *container, const gchar *widget_name)
-{
-	GtkWidget *return_widget = NULL;
-	GList *widgets = gtk_container_get_children(GTK_CONTAINER(container));
-	
-	while(widgets != NULL)
-	{
-		const gchar *child_name = gtk_widget_get_name(GTK_WIDGET(widgets->data));
-		if(strcmp(widget_name, child_name) == 0)
-		{
-			return_widget = GTK_WIDGET(widgets->data);
-			break;
-		}
-		widgets = widgets->next;
-	}
-	
-	return return_widget;
-}	
+// Private Utility Functions
 
 void PC_GuiHandler::hide_all_child_widgets(GtkWidget *container)
 {
@@ -190,19 +209,6 @@ void PC_GuiHandler::hide_all_child_widgets(GtkWidget *container)
 		gtk_widget_hide(GTK_WIDGET(widgets->data));
 		widgets = widgets->next;
 	}
-}
-
-gchar* PC_GuiHandler::get_child_entry_text(GtkWidget *container, const gchar *entry_name)
-{
-	gchar *entry_text = NULL;
-
-	GtkWidget *entry_widget = get_widget_by_name(container, entry_name);
-	if(entry_widget != NULL) 
-	{
-		entry_text = const_cast<gchar*>(gtk_entry_get_text(GTK_ENTRY(entry_widget)));
-	}
-	
-	return entry_text;
 }
 
 bool PC_GuiHandler::entry_text_is_valid(gchar *entry_text)

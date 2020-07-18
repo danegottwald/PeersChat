@@ -91,6 +91,8 @@ private:
 	gchar *user_name;
 	gchar *user_link;
 	
+	bool is_host;
+	
 // Constructor, destructor, and initializer
 public:
 	PC_GuiHandler();
@@ -105,6 +107,8 @@ public:
 	void leaveButtonPressed(GtkWidget *widget, gpointer data);	
 
 // Setters + Getters providing access for GuiCallbacks.cpp
+	GtkWidget* get_widget_by_name(GtkWidget *container, const gchar *widget_name);
+	gchar *get_child_entry_text(GtkWidget *container, const gchar *entry_name);
 	GtkWidget* get_widget_box();
 	
 	void set_user_name(gchar *entry_text);
@@ -114,9 +118,7 @@ public:
 	
 // Utility Functions
 private:
-	GtkWidget* get_widget_by_name(GtkWidget *container, const gchar *widget_name);
 	void hide_all_child_widgets(GtkWidget *container);
-	gchar *get_child_entry_text(GtkWidget *container, const gchar *entry_name);
 	bool entry_text_is_valid(gchar *entry_text);
 	void add_name_to_list(GtkWidget *list, gchar *name);
 	void setup_lobby(GtkWidget *parent, GtkWidget *lobby_box);
