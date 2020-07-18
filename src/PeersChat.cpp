@@ -1,10 +1,25 @@
-#include <iostream>
 #include <string>
 #include "getopt.h"
+#include "PC_Network.hpp"
+#include "PC_Audio.h"
+#include "PC_GUI.hpp"
+
+class PeersChat
+{
+	private:
+		NPeer network;
+		PC_AudioHandler audio;
+		PC_GuiHandler GUI;
+	public:
+		bool useGUI = true;
+		std::string user; 
+		std::string address; // no flag for ip address
+
+};
 
 int main(const int argc, char *argv[])
 {	
-	std::string user, address; // no flag for ip address
+	PeersChat peer;
 	if(argc > 1)
 	{
 		int choice;
@@ -15,14 +30,14 @@ int main(const int argc, char *argv[])
 				case 'h': // host a room
 					break;
 				case 'u': // enter a username
-					user = optarg;
+					peer.user = optarg;
 					break;
 				default:
 					return EXIT_FAILURE;
 			}
 		}
-		address = argv[optind];
-		std::cout << address << std::endl;
+		peer.address = argv[optind];
+		std::cout << peer.address << std::endl;
 	}
 	else
 	{
