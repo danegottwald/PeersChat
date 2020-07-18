@@ -9,6 +9,7 @@
 
 #include <gtk/gtk.h> // https://developer.gnome.org/gtk3/stable/
 #include <regex>
+#include <cstring>
 
 
 // Pre-Compiler Constants
@@ -20,6 +21,8 @@
 // Widget padding: pads between widgets
 #define DEFAULT_WIDGET_PADDING 16
 
+// Max name length: Cannot exceed # of characters
+#define MAX_NAME_LEN 18
 
 // GuiHandler Class ----------------------------------------------------------------------
 /* GuiHandler: Class for encapsulating GUI functionality 

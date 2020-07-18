@@ -208,6 +208,7 @@ gchar* PC_GuiHandler::get_child_entry_text(GtkWidget *container, const gchar *en
 bool PC_GuiHandler::entry_text_is_valid(gchar *entry_text)
 {
 	bool match = std::regex_match(entry_text, std::regex("\\w+"));
+	match = match && (strlen(entry_text) <= MAX_NAME_LEN);
 	return match;
 }
 
@@ -280,7 +281,7 @@ void PC_GuiHandler::show_error_popup(const gchar *message)
 void PC_GuiHandler::username_popup() 
 {
 	show_error_popup(
-	"Error: Username restricted to alphanumeric characters.\n [A-Z], [a-z], [0-9], [_]" 
+	"Error: Username restricted to (<= 18) alphanumeric characters.\n [A-Z], [a-z], [0-9], [_]" 
 	);
 }
 
