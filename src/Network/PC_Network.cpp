@@ -662,6 +662,10 @@ void PeersChatNetwork::disconnect() noexcept
 
 bool PeersChatNetwork::start() noexcept
 {
+	#ifdef NET_DEBUG
+	std::cout << "Call to PeersChatNetwork::start()" << std::endl;
+	#endif
+
 	// Create TCP Server Socket
 	if(tcp_listen > 0)
 		close(tcp_listen);
@@ -669,13 +673,20 @@ bool PeersChatNetwork::start() noexcept
 	// Sock Create
 	if((tcp_listen = socket(AF_INET, SOCK_STREAM, 0)) <= 0)
 	{
-		perror("PeersChatNetwork::start() socket(): ");
+		perror("PeersChatNetwork::start() socket()");
 		stop();
 		return false;
 	}
 
+	// Create TimeVal Struct
+	timeval timeout;
+	std::chrono::seconds     sec = (std::chrono::duration_cast<seconds>(SOCKET_TIMEOUT));
+	std::chrono::microseconds us = (std::chrono::duration_cast<microseconds>(SOCKET_TIMEOUT)) - sec;
+	timeout.tv_sec  = sec.count();
+	timeout.tv_usec =  us.count();
+
 	// Set Timeout
-	int64_t timeout = (std::chrono::duration_cast<milliseconds>(SOCKET_TIMEOUT)).count();
+	std::cout << "SETTING TIMEOUT " << std::endl; //TODO
 	if(setsockopt(tcp_listen, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)) < 0)
 	{
 		perror("PeersChatNetwork::start() Failed to set send timeout");
@@ -690,32 +701,40 @@ bool PeersChatNetwork::start() noexcept
 	}
 
 	// Sock Bind
+	std::cout << "BINDING SOCKET " << std::endl; //TODO
 	sockaddr_in addr;
 	addr.sin_family = AF_INET;
 	addr.sin_addr.s_addr = INADDR_ANY;
 	addr.sin_port = htons(PORT);
 	if(bind(tcp_listen, (sockaddr*) &addr, sizeof(addr)) < 0)
 	{
-		perror("PeersChatNetwork::start() bind(): ");
+		perror("PeersChatNetwork::start() bind()");
 		stop();
 		return false;
 	}
 
 	// Sock Listen
+	std::cout << "LISTENING SOCKET " <<std::endl; //TODO
 	if(listen(tcp_listen, MAX_PEERS + 1) < 0)
 	{
-		perror("PeersChatNetwork::start() listen(): ");
+		perror("PeersChatNetwork::start() listen()");
 		stop();
 		return false;
 	}
 
 
+	std::cout << "STARTING BACKGROUND THREADS " << std::endl; //TODO
 	// Run Background threads
 	running = true;
 	listen_thread.reset(new std::thread(&PeersChatNetwork::listen_on_tcp_thread, this));
 	recv_thread.reset(new std::thread(&PeersChatNetwork::receive_audio_thread, this));
 	for(std::unique_ptr<NPeer> &ptr : this->peers)
 		ptr->startNetStream();
+
+	#ifdef NET_DEBUG
+	std::cout << "Call to PeersChatNetwork::start() completed" << std::endl;
+	#endif
+
 	return true;
 }
 
@@ -1053,7 +1072,8 @@ void PeersChatNetwork::listen_on_tcp_thread()
 		// Accept connection
 		if((peer = accept(tcp_listen, (sockaddr*) &addr, (socklen_t*) sizeof(addr))) < 0)
 		{
-			perror("PeersChatNetwork::listen_on_tcp_thread() accept: ");
+			if(errno != EAGAIN)
+				perror("PeersChatNetwork::listen_on_tcp_thread() accept");
 			continue;
 		}
 
