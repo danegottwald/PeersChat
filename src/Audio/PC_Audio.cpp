@@ -1,36 +1,39 @@
-#include "PC_Audio.h"
+#include "PC_Audio.hpp"
+
+uint32_t PACKETS_LOST = 0;
+uint32_t TOTAL_PACKETS = 0;
 
 // Forward Declarations
-void opus_error_check(const std::string& message, int error, bool critical);
-void Pa_ErrorCheck(const std::string& message, int error, bool critical);
+void opus_error_check(const std::string &message, int error, bool critical);
+void Pa_ErrorCheck(const std::string &message, int error, bool critical);
 
-// Initialize static variables
-OpusEncoder *PC_AudioHandler::encoder = nullptr;
-OpusDecoder *PC_AudioHandler::decoder = nullptr;
-uint8_t PC_AudioHandler::encodedAudio[]{};
-opus_int32 PC_AudioHandler::encodedFrame{};
-opus_int32 PC_AudioHandler::decodedFrame{};
-float PC_AudioHandler::inputVolume = 1.0f;
-float PC_AudioHandler::outputVolume = 0.5f;
-bool PC_AudioHandler::streamState = true;
+// Static variables for use within the static Pa_Callback() portaudio function
+OpusEncoder *APeer::encoder = nullptr;
+OpusDecoder *APeer::decoder = nullptr;
+float APeer::inputVolume = 1.0f;
+float APeer::outputVolume = 0.5f;
+bool APeer::micMute = false;
+bool APeer::deafen = false;
 
-/* PC_AudioHandler Constructor
- * Initialize PortAudio, set default devices, and create an
- * encoder and decoder state
+NPeer network;
+PeersChatNetwork *pcn;
+
+/* APeer Constructor
+ * Initialize PortAudio, set default devices, create an encoder and decoder
+ * state, and set encoder settings.
  */
-PC_AudioHandler::PC_AudioHandler() {
+APeer::APeer() {
 	// Initialize PortAudio and open an audio stream
 	portaudioError = Pa_Initialize();
 	Pa_ErrorCheck("Failed to initialize portaudio", portaudioError, true);
 	portaudioVersion = Pa_GetVersionText();
-	portaudioError = Pa_OpenDefaultStream(&stream, 1,1,
+	portaudioError = Pa_OpenDefaultStream(&stream, 1, 1,
 	                                      paFloat32,
 	                                      SAMPLE_RATE,
 	                                      FRAME_SIZE,
 	                                      Pa_Callback,
-	                                      nullptr);
+	                                      &network);
 	Pa_ErrorCheck("Failed to open audio stream", portaudioError, true);
-
 	// Check default devices
 	defaultInput = Pa_GetDeviceInfo(Pa_GetDefaultInputDevice())->name;
 	defaultOutput = Pa_GetDeviceInfo(Pa_GetDefaultOutputDevice())->name;
@@ -46,177 +49,214 @@ PC_AudioHandler::PC_AudioHandler() {
 	opus_encoder_ctl(encoder, OPUS_SET_SIGNAL(OPUS_SIGNAL_VOICE));
 	opus_encoder_ctl(encoder, OPUS_SET_VBR(0));
 	opus_encoder_ctl(encoder, OPUS_SET_BITRATE(BITRATE));
+	//opus_encoder_ctl(encoder, OPUS_SET_INBAND_FEC(1));
+	//opus_encoder_ctl(encoder, OPUS_SET_PACKET_LOSS_PERC(50));
 }
 
-/* PC_AudioHandler Destructor
- * Terminates PortAudio and destroys the encoder and decoder state
+/* APeer Destructor
+ * Closes and terminates the PortAudio stream and destroys the encoder and
+ * decoder state.
  */
-PC_AudioHandler::~PC_AudioHandler() {
+APeer::~APeer() {
 	opus_encoder_destroy(encoder);
 	opus_decoder_destroy(decoder);
-	Pa_Terminate();
 	Pa_CloseStream(stream);
-	stream = nullptr;
-	encoder = nullptr;
-	decoder = nullptr;
-}
-
-/* beginVoiceStream()
- * Starts the voice stream, the stream will remain to stay open until
- * stopVoiceStream() is called.  Must be called every time a stream to
- * reopen the stream.
- */
-void PC_AudioHandler::beginVoiceStream() {
-	streamState = true;
-	portaudioError = Pa_StartStream(stream);
-	Pa_ErrorCheck("Failed to start stream", portaudioError, true);
-
-	std::cout << std::endl << "Playback Begun" << std::endl;
-	while (streamState) {
-		Pa_Sleep(20);
-	}
-	//Pa_Sleep(5000);
-
-	Pa_StopStream(stream);
-	Pa_ErrorCheck("Failed to stop stream", portaudioError, true);
+	Pa_Terminate();
 }
 
 /* Pa_Callback()
  * Called automatically every time the PortAudio engine has
- * captured audio data or when it needs more audio data for
- * the output. This function is called as a part of beginVoiceStream().
+ * captured audio data.  Encoding/decoding, input/output volumes, and enqueueing
+ * audio packets is done here.
  */
-int PC_AudioHandler::Pa_Callback(const void *input,
-                                 void *output,
-                                 unsigned long framesPerBuffer,
-                                 const PaStreamCallbackTimeInfo *timeInfo,
-                                 PaStreamCallbackFlags status_flags,
-                                 void *userData)
-{
-	// Pointers to the input and output streams
-	auto *in = (float*) input;
-	auto *out = (float*) output;
-	// Adjust the volume of the input if the modifier is not 1.0
-	if (inputVolume != 1.0f) {
-		for(unsigned int i = 0; i < framesPerBuffer; ++i) {
+int APeer::Pa_Callback(const void *input,
+                       void *output,
+                       unsigned long framesPerBuffer,
+                       const PaStreamCallbackTimeInfo *timeInfo,
+                       PaStreamCallbackFlags status_flags,
+                       void *userData) {
+	auto *net = (NPeer*) userData;
+	auto *in = (float *) input;
+	auto *out = (float *) output;
+	if (inputVolume != 1.0f && (inputVolume > 0 && inputVolume <= 1.5f)) {
+		for (unsigned int i = 0; i < framesPerBuffer; ++i) {
 			in[i] *= inputVolume;
 		}
 	}
-	// Encode and check whether an error occurred
-	encodedFrame = opus_encode_float(encoder, in, FRAME_SIZE, encodedAudio, MAX_PACKET_SIZE);
-	opus_error_check("Failed to encode frame", encodedFrame, true);
 
-	decodedFrame = opus_decode_float(decoder, encodedAudio, encodedFrame, out, FRAME_SIZE, 0);
-	opus_error_check("Failed to decode frame", decodedFrame, true);
-
-	// Adjust the volume of the output if the modifier is not 1.0
-	if (outputVolume != 1.0f) {
-		//memcpy(out, in, framesPerBuffer * 4);
-		for(unsigned int i = 0; i < framesPerBuffer; ++i) {
-			out[i] *= outputVolume;
-		}
+	AudioOutPacket *outPacket = net->getEmptyOutPacket();
+	if (!micMute || inputVolume != 0) {
+		outPacket->packet_len = opus_encode_float(encoder,
+		                                          in,
+		                                          FRAME_SIZE,
+		                                          outPacket->packet.get(),
+		                                          BUFFER_SIZE);
+		#ifdef AUDIO_DEBUG
+		opus_error_check("Failed to encode frame", outPacket->packet_len, true);
+		#endif
+		net->enqueue_out(outPacket);
 	}
 
+	for (int i = 0; i < pcn->getNumberPeers(); i++) {
+		NPeer *peer = (*pcn)[i];
+		uint32_t lastPacketID = peer->getInPacketId();
+		AudioInPacket *inPacket = peer->getAudioInPacket();
+		if (inPacket != nullptr) {
+			PACKETS_LOST += inPacket->packet_id - lastPacketID - 1;
+			TOTAL_PACKETS = inPacket->packet_id;
+			if (!deafen) {  // May cause port audio to continuously play last packet, needs testing, check else
+				int decodedFrame = opus_decode_float(decoder,
+				                                     inPacket->packet.get(),
+				                                     inPacket->packet_len,
+				                                     out,
+				                                     FRAME_SIZE,
+				                                     0);
+				#ifdef AUDIO_DEBUG
+				opus_error_check("Failed to decode frame", decodedFrame, true);
+				#endif
+			}
+			else {
+				out = nullptr;
+			}
+			peer->retireEmptyInPacket(inPacket);
+			if ((!deafen && outputVolume != 1.0f)
+			    && (outputVolume >= 0 && outputVolume <= 2.0f)) {
+				for (unsigned int j = 0; j < framesPerBuffer; ++j) {
+					out[i] *= outputVolume;
+				}
+			}
+		}
+	}
 	return 0;
 }
 
-/* getEncodedPacket()
- * Returns the encoded audio packet
+/* startVoiceStream()
+ * Starts the voice stream if one is not already open. The stream will remain
+ * to stay open until stopVoiceStream() is called.
  */
-uint8_t PC_AudioHandler::getEncodedPacket() {
-	return reinterpret_cast<uint8_t>(encodedAudio);
+void APeer::startVoiceStream() {
+	if (Pa_IsStreamStopped(stream)) {
+		portaudioError = Pa_StartStream(stream);
+		Pa_ErrorCheck("Failed to start stream", portaudioError, true);
+		std::cout << "Audio Stream Opened" << std::endl;
+	} else {
+		std::cout << "Stream already open" << std::endl;
+	}
 }
 
-/* getInputVolume()
- * Returns the current volume multiplier for the input device
+/* stopVoiceStream()
+ * Closes the voice stream if one is currently active.
  */
-float PC_AudioHandler::getInputVolume() {
+void APeer::stopVoiceStream() {
+	if (Pa_IsStreamActive(stream)) {
+		Pa_AbortStream(stream);
+		Pa_StopStream(stream);
+		Pa_ErrorCheck("Failed to stop stream", portaudioError, true);
+		std::cout << "Audio Stream Stopped" << std::endl;
+	} else {
+		std::cout << "No stream currently open" << std::endl;
+	}
+}
+
+// APeer Class Getters ---------------------------------------------------------
+
+/* getInputVolume()
+ * Returns the current volume multiplier for the input device.
+ */
+float APeer::getInputVolume() {
 	return inputVolume;
 }
 
 /* getOutputVolume()
- * Returns the current volume multiplier for the output device
+ * Returns the current volume multiplier for the output device.
  */
-float PC_AudioHandler::getOutputVolume() {
+float APeer::getOutputVolume() {
 	return outputVolume;
 }
 
-/* setInputVolume()
- * Sets the input device volume multiplier to the given argument
- */
-void PC_AudioHandler::setInputVolume(float x) {
-	inputVolume = x;
-}
-
-/* setOutputVolume()
- * Sets the output device volume multiplier to the given argument
- */
-void PC_AudioHandler::setOutputVolume(float x) {
-	outputVolume = x;
-}
-
 /* getDefaultInput()
- * Returns a string that contains the name of the current default input device
+ * Returns a string that contains the name of the current default input device.
  */
-std::string PC_AudioHandler::getDefaultInput() {
+std::string APeer::getDefaultInput() {
 	return defaultInput;
 }
 
 /* getDefaultOutput()
- * Returns a string that contains the name of the current default output device
+ * Returns a string that contains the name of the current default output device.
  */
-std::string PC_AudioHandler::getDefaultOutput() {
+std::string APeer::getDefaultOutput() {
 	return defaultOutput;
 }
 
 /* getOpusVersion()
- * Returns a string that contains the name of the version of the opus codec
+ * Returns a string that contains the name of the version of the opus codec.
  */
-std::string PC_AudioHandler::getOpusVersion() {
+std::string APeer::getOpusVersion() {
 	return opusVersion;
 }
 
 /* getPortAudioVersion()
- * Returns a string that contains the name of the version of portaudio
+ * Returns a string that contains the name of the version of PortAudio.
  */
-std::string PC_AudioHandler::getPortAudioVersion() {
+std::string APeer::getPortAudioVersion() {
 	return portaudioVersion;
 }
 
-/* getEncodedFrameSize()
- * Returns the size (in bytes) of the encoded packet
+/* getStreamInfo()
+ * Used to get information such as sample rate and latency of the PortAudio
+ * stream.
  */
-uint8_t PC_AudioHandler::getEncodedFrameSize() {
-	return encodedFrame;
+const PaStreamInfo *APeer::getStreamInfo() {
+	return Pa_GetStreamInfo(stream);
 }
 
-/* setStreamState()
- * Closes the currently open voice stream
+/* getCPULoad()
+ * Returns the current CPU load of the port audio stream.
  */
-void PC_AudioHandler::stopVoiceStream() {
-	streamState = false;
-	if(audioThread.joinable()) {
-		audioThread.join();
+double APeer::getCPULoad() {
+	return Pa_GetStreamCpuLoad(stream);
+}
+
+// APeer Class Setters ---------------------------------------------------------
+
+/* setInputVolume()
+ * Sets the input device volume multiplier to the given argument.
+ *     Parameter Range: 0.0 - 1.25
+ */
+void APeer::setInputVolume(float x) {
+	if (x >= 0 && x <= 1.25f) {
+		inputVolume = x;
 	}
 }
 
-/* beginVoiceStreamThreaded()
- * Opens a voice stream on a different thread.  The thread is closed
- * once stopVoiceStream is called.
- * TODO: BUG: Cannot be called after being stopped once
+/* setOutputVolume()
+ * Sets the output device volume multiplier to the given argument.
+ *     Parameter Range: 0.0 - 2.0
  */
-void PC_AudioHandler::beginVoiceStreamThreaded() {
-	audioThread = std::thread(&PC_AudioHandler::beginVoiceStream, this);
+void APeer::setOutputVolume(float x) {
+	if (x >= 0 && x <= 2.0f) {
+		outputVolume = x;
+	}
 }
 
-/* getStreamState()
- * Returns the state of the audio streamer.  True is currently active and
- * False is not active.
+/* setMuteMic()
+ * Sets the state of the input microphone.  False will disable microphone
+ * input and true will enable input.
  */
-bool PC_AudioHandler::getStreamState() {
-	return streamState;
+void APeer::setMuteMic(bool micState) {
+	micMute = micState;
 }
 
+/* setDeafen()
+ * Sets the state of the output audio.  False will cause Pa_Callback() to skip
+ * decoding of packets and play no audio.  True will allow the decoding of
+ * packets.
+ */
+void APeer::setDeafen(bool deafenState) {
+	deafen = deafenState;
+}
+
+// Non class functions ---------------------------------------------------------
 
 /* opus_ErrorCheck()
  * Used to check if an opus error has occurred.
@@ -224,9 +264,9 @@ bool PC_AudioHandler::getStreamState() {
  * error: object being checked
  * critical: false/0 if non critical, true/1 if critical
  */
-void opus_error_check(const std::string& message, int error, bool critical) {
+void opus_error_check(const std::string &message, int error, bool critical) {
 	if (error < 0) {
-		std::cerr << message << ": " << opus_strerror(error);
+		std::cerr << message << ": " << opus_strerror(error) << '\n';
 		if (critical) {
 			exit(EXIT_FAILURE);
 		}
@@ -239,9 +279,9 @@ void opus_error_check(const std::string& message, int error, bool critical) {
  * error: object being checked
  * critical: false/0 if non critical, true/1 if critical
  */
-void Pa_ErrorCheck(const std::string& message, int error, bool critical) {
+void Pa_ErrorCheck(const std::string &message, int error, bool critical) {
 	if (error != 0) {
-		std::cerr << message << ": " << Pa_GetErrorText(error);
+		std::cerr << message << ": " << Pa_GetErrorText(error) << '\n';
 		Pa_Terminate();
 		if (critical) {
 			exit(EXIT_FAILURE);
