@@ -41,28 +41,32 @@ int main(const int argc, char *argv[])
 
 		while(true)
 		{
-			std::string input;
+			// Print Users
+			for(int i = 0; i < pchat.network.getNumberPeers(); ++i)
+				std::cout << i << ": " << pchat.network[i]->getName() << '\n';
+
 			// Grab user input for other functions (volume, kick, leave)
+			std::string input;
 			getline(std::cin,input);
 
-			if(input == "-q")
+			if(input == "q")
 			{
 				pchat.network.disconnect();
 				break;
 			}
 
-			if(input == "-k") // -k (user)
+			if(input == "k") // -k (user)
 			{
 				// Kick someone
 			}
 
-			if(input == "-v") // -v (+/- num)
+			if(input == "v") // -v (+/- num)
 			{
 				//set volume
 //				pchat.audio.setOutputVolume((float) input); // still needs string parsing
 			}
 
-			if(input == "-m") // -m (user)
+			if(input == "m") // -m (user)
 			{
 				//mute someone
 				pchat.audio.setMuteMic(true);
