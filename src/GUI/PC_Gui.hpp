@@ -10,6 +10,7 @@
 #include <gtk/gtk.h> // Using GTK+ 3.0: https://developer.gnome.org/gtk3/stable/
 #include <regex>
 #include <cstring>
+#include <PC_Network.hpp>
 
 
 // Pre-Compiler Constants
@@ -22,7 +23,7 @@
 #define DEFAULT_WIDGET_PADDING 16
 
 // Max name length: Cannot exceed # of characters
-#define MAX_NAME_LEN 18
+// MAX_NAME_LEN constant defined in PC_Network.hpp
 
 // GuiHandler Class -----------------------------------------------------------------------
 /* GuiHandler: Class for encapsulating GUI functionality 
