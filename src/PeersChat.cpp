@@ -43,11 +43,13 @@ int main(const int argc, char *argv[])
 	else
 	{
 		std::cout << "GUI mode" << std::endl;
+		peer.GUI.runGui(argc,argv);
 	}
 
 	while(true)
 	{
 		// Grab user input
+
 	}
 
 
