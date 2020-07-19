@@ -259,16 +259,19 @@ GtkWidget* PC_GuiHandler::create_new_user_row(const gchar *name, bool is_host, b
 	{
 		gtk_label_set_text(GTK_LABEL(name_label), name);
 	}
+	gtk_widget_set_name(name_label, "row_name");
 	gtk_box_pack_start(GTK_BOX(new_row), name_label, FALSE, FALSE, FALSE);
 	
 	if(kickable)
 	{
 		GtkWidget *kick_button;
 		kick_button = gtk_button_new_with_label("Kick");
+		g_signal_connect(kick_button, "clicked", G_CALLBACK(kick_callback), this);
 		gtk_box_pack_end(GTK_BOX(new_row), kick_button, FALSE, FALSE, FALSE);
 	}
 		
 	mute_button = gtk_button_new_with_label("Mute");
+	g_signal_connect(mute_button, "clicked", G_CALLBACK(mute_callback), this);
 	gtk_box_pack_end(GTK_BOX(new_row), mute_button, FALSE, FALSE, FALSE);
 	
 	return new_row;
@@ -303,10 +306,16 @@ void PC_GuiHandler::setup_lobby(GtkWidget *parent, GtkWidget *lobby_box)
 	GtkWidget *outputLabel = gtk_label_new((const gchar*) "Output Volume");
 	gtk_box_pack_end(GTK_BOX(outputBox), outputLabel, FALSE, FALSE, 0);
 	
-	if(is_host)
+	if(is_host) 
+	{
 		add_host_to_session(user_name);
+		add_user_to_session("TestUser", TRUE);
+	}
 	else
+	{
 		add_user_to_session(user_name, FALSE);
+		add_host_to_session("TestHost");
+	}
 	gtk_widget_show_all(lobby_box);
 }
 
