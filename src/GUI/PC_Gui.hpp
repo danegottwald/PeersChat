@@ -24,7 +24,7 @@
 // Max name length: Cannot exceed # of characters
 #define MAX_NAME_LEN 18
 
-// GuiHandler Class ----------------------------------------------------------------------
+// GuiHandler Class -----------------------------------------------------------------------
 /* GuiHandler: Class for encapsulating GUI functionality 
  *
  * @member app  Pointer to the GtkApplication, a GTK+ object that automatically
@@ -33,9 +33,14 @@
  * @member widget_box  Pointer to the primary GtkWidget container, used
  *                     in order to access GtkWidget data from callback functions
  *
+ * @member name_list  Pointer to GtkWidget holding rows that hold names of users,
+ *                    also containing kick/mute buttons
+ *
  * @member user_name  Holds text data for username from textbox entry
  *
  * @member user_link  Holds text data for joining link from textbox entry
+ *
+ * @member is_host  Boolean that's true if GuiHandler user is hosting a session
  *
  * @constructor PC_GuiHandler()  Default contructor, initializes private fields as well as
  *                               GtkApplication (serves as root to GtkObjects).
@@ -46,6 +51,17 @@
  *                      @return (int): Returns status code at the end of GUI event loop.
  *                                     (output of g_application_run)
  *
+ * @method void add_host_to_session(1)  Adds a host to the GUI name_list for an ongoing
+ *                                      session.
+ *                                        @prereq: GUI is already running through runGui()  
+ *                                        @param name: User's name to be displayed
+ *                                                     in session
+ *
+ * @method void add_user_to_session(1)  Adds a user (non-host) to the GUI name_list for an 
+ *                                      ongoing session.
+ *                                        @prereq: GUI is already running through runGui()  
+ *                                        @param name: User's name to be displayed
+ *                                                     in session
  * ===Callback Functions===
  * Note: Callback functions of GUI class accessed externally through GuiCallbacks.cpp
  *
