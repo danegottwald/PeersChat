@@ -22,6 +22,7 @@ int main(const int argc, char *argv[])
 	PeersChat peer;
 	if(argc > 1)
 	{
+		peer.useGUI = false;
 		int choice;
 		while((choice = getopt(argc,argv,"hu:")) != -1)
 		{
@@ -43,6 +44,13 @@ int main(const int argc, char *argv[])
 	{
 		std::cout << "GUI mode" << std::endl;
 	}
+
+	while(true)
+	{
+		// Grab user input
+	}
+
+
 	return EXIT_SUCCESS;
 }
 
