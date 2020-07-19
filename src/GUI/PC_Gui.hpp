@@ -10,6 +10,7 @@
 #include <gtk/gtk.h> // Using GTK+ 3.0: https://developer.gnome.org/gtk3/stable/
 #include <regex>
 #include <cstring>
+#include "../Network/PC_Network.hpp"
 
 
 // Pre-Compiler Constants
@@ -23,6 +24,7 @@
 
 // Max name length: Cannot exceed # of characters
 #define MAX_NAME_LEN 18
+
 
 // GuiHandler Class -----------------------------------------------------------------------
 /* GuiHandler: Class for encapsulating GUI functionality 
@@ -144,6 +146,9 @@ public:
 	gchar* get_user_name();
 	void set_user_link(gchar *entry_text);
 	gchar* get_user_link();
+
+// Public member variable for Networking object
+	PeersChatNetwork *network;
 	
 // Utility Functions
 private:
