@@ -722,18 +722,24 @@ bool PeersChatNetwork::start() noexcept
 
 void PeersChatNetwork::stop() noexcept
 {
+	#ifdef NET_DEBUG
+	std::cout << "Call to PeersChatNetwork::stop()" << std::endl;
+	#endif
 	std::lock_guard<std::mutex> lock(peers_lock);
 	running = false;
 
 	this->peers.clear();
 
-	if(recv_thread->joinable() || listen_thread->joinable())
+	if((recv_thread.get() && recv_thread->joinable()) || (listen_thread.get() && listen_thread->joinable()))
 		std::this_thread::sleep_for(PEERS_CHAT_DESTRUCT_TIMEOUT);
 	recv_thread.reset();
 	listen_thread.reset();
 
 	if(tcp_listen > 0) close(tcp_listen);
 	tcp_listen = -1;
+	#ifdef NET_DEBUG
+	std::cout << "Call to PeersChatNetwork::stop() completed" << std::endl;
+	#endif
 }
 
 
