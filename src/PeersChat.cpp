@@ -14,9 +14,15 @@ class PeersChat
 		bool useGUI = true;
 };
 
+PeersChatNetwork *Network = NULL;
 int main(const int argc, char *argv[])
 {	
+	// Create PeersChat Object
 	std::unique_ptr<PeersChat> pchat(new PeersChat);
+
+	// Make Network accessible globaly
+	Network = &(pchat->network);
+
 	if(argc > 1)
 	{
 		pchat->useGUI = false;
