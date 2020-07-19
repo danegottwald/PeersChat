@@ -31,6 +31,11 @@ void host_button_callback(GtkWidget *widget, gpointer data)
 	{
 		// throw error
 	}
+
+	else
+	{
+		// start audio library
+	}
 }
 
 void join_button_callback(GtkWidget *widget, gpointer data) 
@@ -51,8 +56,9 @@ void join_button_callback(GtkWidget *widget, gpointer data)
 	// parse link_text for IP address and port
 	std::string str(link_text);
 	size_t pos = str.find_first_of(':', 0);
-	std::string ip = str.substr(0, pos - 1);
-	std::string port = str.substr(pos, 10);
+	std::string ip = str.substr(0, pos);
+	std::string port = str.substr(pos + 1, 10);
+
 
 	// define socket address and join connection
 	sockaddr_in addr; 
@@ -65,6 +71,11 @@ void join_button_callback(GtkWidget *widget, gpointer data)
 	if (Network->join(addr) != TRUE)
 	{
 		// signal error joining call
+	}
+
+	else
+	{
+		// start audio library
 	}
 }
 
