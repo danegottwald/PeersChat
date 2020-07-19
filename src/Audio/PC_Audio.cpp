@@ -23,6 +23,9 @@ PeersChatNetwork *pcn;
  * state, and set encoder settings.
  */
 APeer::APeer() {
+	#ifdef AUDIO_DEBUG
+	std::cout << "APeer Constructor Called" << std::endl;
+	#endif
 	// Initialize PortAudio and open an audio stream
 	portaudioError = Pa_Initialize();
 	Pa_ErrorCheck("Failed to initialize portaudio", portaudioError, true);
@@ -51,6 +54,9 @@ APeer::APeer() {
 	opus_encoder_ctl(encoder, OPUS_SET_BITRATE(BITRATE));
 	//opus_encoder_ctl(encoder, OPUS_SET_INBAND_FEC(1));
 	//opus_encoder_ctl(encoder, OPUS_SET_PACKET_LOSS_PERC(50));
+	#ifdef AUDIO_DEBUG
+	std::cout << "APeer Constructor Completed" << std::endl;
+	#endif
 }
 
 /* APeer Destructor
@@ -58,11 +64,17 @@ APeer::APeer() {
  * decoder state.
  */
 APeer::~APeer() {
+	#ifdef AUDIO_DEBUG
+	std::cout << "APeer Destructor Called" << std::endl;
+	#endif
 	Pa_AbortStream(stream);
 	Pa_CloseStream(stream);
 	opus_encoder_destroy(encoder);
 	opus_decoder_destroy(decoder);
 	Pa_Terminate();
+	#ifdef AUDIO_DEBUG
+	std::cout << "Apeer Destructor Completed" << std::endl;
+	#endif
 }
 
 /* Pa_Callback()
