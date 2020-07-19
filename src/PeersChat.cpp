@@ -1,20 +1,18 @@
 #include <string>
-#include "getopt.h"
+#include <unistd.h>
 #include "PC_Network.hpp"
 #include "PC_Audio.h"
 #include "PC_GUI.hpp"
 
 class PeersChat
 {
-	private:
+	public:
 		NPeer network;
 		PC_AudioHandler audio;
 		PC_GuiHandler GUI;
-	public:
 		bool useGUI = true;
 		std::string user; 
 		std::string address; // no flag for ip address
-
 };
 
 int main(const int argc, char *argv[])
@@ -38,7 +36,12 @@ int main(const int argc, char *argv[])
 			}
 		}
 		peer.address = argv[optind];
-		std::cout << peer.address << std::endl;
+
+		while(true)
+		{
+			// Grab user input
+
+		}
 	}
 	else
 	{
@@ -46,13 +49,5 @@ int main(const int argc, char *argv[])
 		peer.GUI.runGui(argc,argv);
 	}
 
-	while(true)
-	{
-		// Grab user input
-
-	}
-
-
 	return EXIT_SUCCESS;
 }
-
