@@ -7,7 +7,7 @@
  */
 
 
-#include <gtk/gtk.h> // https://developer.gnome.org/gtk3/stable/
+#include <gtk/gtk.h> // Using GTK+ 3.0: https://developer.gnome.org/gtk3/stable/
 #include <regex>
 #include <cstring>
 
@@ -87,6 +87,7 @@ class PC_GuiHandler
 private:
 	GtkApplication *app;
 	GtkWidget *widget_box;
+	GtkWidget *name_list;
 	
 	gchar *user_name;
 	gchar *user_link;
@@ -98,6 +99,10 @@ public:
 	PC_GuiHandler();
 	~PC_GuiHandler();
 	int runGui(int argc, char *argv[]);
+
+// Public functions for adding users to session 
+	void add_host_to_session(const gchar *name);
+	void add_user_to_session(const gchar *name, bool kickable);
 
 // Callback Functions
 	void activate(GtkApplication *app, gpointer data);
@@ -120,7 +125,7 @@ public:
 private:
 	void hide_all_child_widgets(GtkWidget *container);
 	bool entry_text_is_valid(gchar *entry_text);
-	void add_name_to_list(GtkWidget *list, gchar *name);
+	GtkWidget* create_new_user_row(const gchar *name, bool is_host, bool kickable);
 	void setup_lobby(GtkWidget *parent, GtkWidget *lobby_box);
 	void show_error_popup(const gchar *message);
 	void username_popup();

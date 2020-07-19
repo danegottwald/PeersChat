@@ -5,9 +5,12 @@
 // Constructor
 PC_GuiHandler::PC_GuiHandler()
 {
+	widget_box = NULL;
+	name_list = NULL;
+	
 	user_name = NULL;
-	user_link = NULL;
-	is_host = false;
+	user_link = NULL;	
+	is_host = FALSE;
 
 	app = gtk_application_new("edu.ucsc.PeersChat", G_APPLICATION_FLAGS_NONE);
 	g_signal_connect(app, "activate", G_CALLBACK(activate_callback), this);
@@ -32,6 +35,19 @@ int PC_GuiHandler::runGui(int argc, char *argv[])
 	return status;
 }
 
+// Functions for adding users to session
+
+void PC_GuiHandler::add_host_to_session(const gchar *name)
+{
+	GtkWidget *new_row = create_new_user_row(name, TRUE, FALSE);
+	gtk_container_add(GTK_CONTAINER(name_list), new_row);
+}
+
+void PC_GuiHandler::add_user_to_session(const gchar *name, bool kickable)
+{
+	GtkWidget *new_row = create_new_user_row(name, FALSE, kickable);
+	gtk_container_add(GTK_CONTAINER(name_list), new_row);
+}
 
 // GTK+ Callback functions bound to GtkObjects
 
@@ -96,7 +112,7 @@ void PC_GuiHandler::hostButtonPressed(GtkWidget *widget, gpointer data)
 	{
 		set_user_name(name_text);
 		
-		is_host = true;
+		is_host = TRUE;
 		
 		GtkWidget *lobby_box = NULL;
 		setup_lobby(GTK_WIDGET(data), lobby_box);
@@ -120,6 +136,8 @@ void PC_GuiHandler::joinButtonPressed(GtkWidget *widget, gpointer data)
 		set_user_name(name_text);
 		set_user_link(link_text);
 	
+		is_host = FALSE;
+		
 		GtkWidget *lobby_box = NULL;
 		setup_lobby(GTK_WIDGET(data), lobby_box);
 	}
@@ -133,7 +151,7 @@ void PC_GuiHandler::outputVolChanged(GtkVolumeButton *v1, gdouble value, gpointe
 void PC_GuiHandler::leaveButtonPressed(GtkWidget *widget, gpointer data)
 {
 	GtkWidget *lobby_box = get_widget_by_name(GTK_WIDGET(data), "LobbyBox");
-	gtk_container_remove(GTK_CONTAINER(data), lobby_box);
+	gtk_widget_destroy(lobby_box);
 	gtk_widget_show_all(GTK_WIDGET(data));
 }
 
@@ -213,30 +231,47 @@ void PC_GuiHandler::hide_all_child_widgets(GtkWidget *container)
 
 bool PC_GuiHandler::entry_text_is_valid(gchar *entry_text)
 {
-	bool match = std::regex_match(entry_text, std::regex("\\w+"));
+	bool match = regex_match(entry_text, std::regex("\\w+"));
 	match = match && (strlen(entry_text) <= MAX_NAME_LEN);
 	return match;
 }
 
-void PC_GuiHandler::add_name_to_list(GtkWidget *list, gchar *name)
+GtkWidget* PC_GuiHandler::create_new_user_row(const gchar *name, bool is_host, bool kickable)
 {
 	GtkWidget *new_row;
 	GtkWidget *name_label;
-	GtkWidget *kick_button;
 	GtkWidget *mute_button;
 	
 	new_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
 	gtk_widget_set_name(new_row, name);
-	gtk_container_add(GTK_CONTAINER(list), new_row);
 	
-	name_label = gtk_label_new(name);
+	name_label = gtk_label_new(NULL);
+	if(is_host)
+	{
+		const char *format = "<b>%s</b>";
+		char *markup;
+		
+		markup = g_markup_printf_escaped(format, name);
+		gtk_label_set_markup(GTK_LABEL(name_label), markup);
+		g_free(markup);
+	}
+	else
+	{
+		gtk_label_set_text(GTK_LABEL(name_label), name);
+	}
 	gtk_box_pack_start(GTK_BOX(new_row), name_label, FALSE, FALSE, FALSE);
 	
-	kick_button = gtk_button_new_with_label("Kick");
-	gtk_box_pack_end(GTK_BOX(new_row), kick_button, FALSE, FALSE, FALSE);
-	
+	if(kickable)
+	{
+		GtkWidget *kick_button;
+		kick_button = gtk_button_new_with_label("Kick");
+		gtk_box_pack_end(GTK_BOX(new_row), kick_button, FALSE, FALSE, FALSE);
+	}
+		
 	mute_button = gtk_button_new_with_label("Mute");
-	gtk_box_pack_end(GTK_BOX(new_row), mute_button, FALSE, FALSE, FALSE);	
+	gtk_box_pack_end(GTK_BOX(new_row), mute_button, FALSE, FALSE, FALSE);
+	
+	return new_row;
 }
 
 void PC_GuiHandler::setup_lobby(GtkWidget *parent, GtkWidget *lobby_box)
@@ -247,7 +282,7 @@ void PC_GuiHandler::setup_lobby(GtkWidget *parent, GtkWidget *lobby_box)
 	gtk_widget_set_vexpand(lobby_box, TRUE);
 	gtk_container_add(GTK_CONTAINER(parent), lobby_box);
 
-	GtkWidget *name_list = gtk_list_box_new();
+	name_list = gtk_list_box_new();
 	gtk_list_box_set_selection_mode(GTK_LIST_BOX(name_list), GTK_SELECTION_NONE);
 	gtk_container_add(GTK_CONTAINER(lobby_box), name_list);
 
@@ -268,8 +303,10 @@ void PC_GuiHandler::setup_lobby(GtkWidget *parent, GtkWidget *lobby_box)
 	GtkWidget *outputLabel = gtk_label_new((const gchar*) "Output Volume");
 	gtk_box_pack_end(GTK_BOX(outputBox), outputLabel, FALSE, FALSE, 0);
 	
-	add_name_to_list(name_list, user_name);
-
+	if(is_host)
+		add_host_to_session(user_name);
+	else
+		add_user_to_session(user_name, FALSE);
 	gtk_widget_show_all(lobby_box);
 }
 
