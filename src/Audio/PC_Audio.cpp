@@ -150,7 +150,7 @@ void APeer::startVoiceStream() {
 void APeer::stopVoiceStream() {
 	if (Pa_IsStreamActive(stream)) {
 		Pa_AbortStream(stream);
-		Pa_StopStream(stream);
+//		Pa_StopStream(stream);
 		Pa_ErrorCheck("Failed to stop stream", portaudioError, true);
 		std::cout << "Audio Stream Stopped" << std::endl;
 	} else {
