@@ -598,7 +598,7 @@ bool PeersChatNetwork::join(const sockaddr_in &addr) noexcept
 
 	// Add Peers
 	for(sockaddr_in &addr : peer_addr)
-		addPeer(addr);;
+		addPeer(addr);
 
 	// Close Out TCP Connection
 	NPeerAttorney::destroyTCP(peer);
@@ -606,10 +606,15 @@ bool PeersChatNetwork::join(const sockaddr_in &addr) noexcept
 
 	// Start or fail sucessfully
 	if(this->start())
+	{
+		this->getNames();
 		return true;
+	}
 	else
+	{
 		this->stop();
-	return false;
+		return false;
+	}
 }
 
 
@@ -1177,6 +1182,15 @@ bool PeersChatNetwork::connectFulfill(int new_member, sockaddr_in addr)
 	// Add Peer Yourself
 	addPeer(addr);
 
+	// Get His Name
+	NPeer *peer_ptr = (*this)[addr];
+	if(peer_ptr)
+	{
+		NPeerAttorney::createTCP(peer_ptr);
+		peer_ptr->setName(this->getName(NPeerAttorney::getTCP(peer_ptr)));
+		NPeerAttorney::destroyTCP(peer_ptr);
+	}
+
 	#ifdef NET_DEBUG
 	std::cout << "Peer Successfully Added" << std::endl;
 	#endif
@@ -1209,6 +1223,13 @@ bool PeersChatNetwork::proposeFulfill(int peer, sockaddr_in addr)
 	if(tag == ACCEPT && decision)
 	{
 		addPeer(addr);
+		NPeer *peer_ptr = (*this)[addr];
+		if(peer_ptr)
+		{
+			NPeerAttorney::createTCP(peer_ptr);
+			peer_ptr->setName(this->getName(NPeerAttorney::getTCP(peer_ptr)));
+			NPeerAttorney::destroyTCP(peer_ptr);
+		}
 		return true;
 	}
 	else return false;
