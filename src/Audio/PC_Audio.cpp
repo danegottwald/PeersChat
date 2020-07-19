@@ -112,7 +112,7 @@ int APeer::Pa_Callback(const void *input,
 				                                     FRAME_SIZE,
 				                                     0);
 				#ifdef AUDIO_DEBUG
-				opus_error_check("Failed to decode frame", decodedFrame, true);
+				opus_error_check("Failed to decode frame", decodedFrame, false);
 				#endif
 			}
 			else {
