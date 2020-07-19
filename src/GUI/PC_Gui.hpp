@@ -62,6 +62,13 @@
  *                                        @prereq: GUI is already running through runGui()  
  *                                        @param name: User's name to be displayed
  *                                                     in session
+ *
+ * @method void remove_name_from_session(1)  Removes a user from the GUI name_list
+ *                                           of an ongoing session.
+ *                                             @prereq: GUI is already running through runGui()  
+ *                                             @param name: User's name to be removed
+ *                                                          from session
+ *
  * ===Callback Functions===
  * Note: Callback functions of GUI class accessed externally through GuiCallbacks.cpp
  *
@@ -119,6 +126,7 @@ public:
 // Public functions for adding users to session 
 	void add_host_to_session(const gchar *name);
 	void add_user_to_session(const gchar *name, bool kickable);
+	void remove_name_from_session(const gchar *name);
 
 // Callback Functions
 	void activate(GtkApplication *app, gpointer data);
