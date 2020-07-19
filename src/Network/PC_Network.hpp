@@ -111,7 +111,7 @@ static inline int close(int &x) { return closesocket(x); }
 // Pre-Compiler Constants
 #define BUFFER_SIZE 4096
 #define MAX_NAME_LEN 18
-#define MAX_PEERS 64
+#define MAX_PEERS 5
 
 
 // Globals

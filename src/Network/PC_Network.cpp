@@ -702,7 +702,7 @@ bool PeersChatNetwork::start() noexcept
 	}
 
 	// Sock Listen
-	if(listen(tcp_listen, 5) < 0)
+	if(listen(tcp_listen, MAX_PEERS + 1) < 0)
 	{
 		perror("PeersChatNetwork::start() listen(): ");
 		stop();
