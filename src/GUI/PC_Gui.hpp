@@ -12,6 +12,7 @@
 #include <cstring>
 #include <PC_Network.hpp>
 
+extern PeersChatNetwork *Network;
 
 // Pre-Compiler Constants
 #define DEFAULT_WINDOW_WIDTH 360
@@ -23,7 +24,8 @@
 #define DEFAULT_WIDGET_PADDING 16
 
 // Max name length: Cannot exceed # of characters
-// MAX_NAME_LEN constant defined in PC_Network.hpp
+#define MAX_NAME_LEN 18
+
 
 // GuiHandler Class -----------------------------------------------------------------------
 /* GuiHandler: Class for encapsulating GUI functionality 
@@ -158,4 +160,3 @@ private:
 };
 
 #endif
-
