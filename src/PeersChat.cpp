@@ -16,23 +16,23 @@ class PeersChat
 
 int main(const int argc, char *argv[])
 {	
-	PeersChat pchat;
+	std::unique_ptr<PeersChat> pchat(new PeersChat);
 	if(argc > 1)
 	{
-		pchat.useGUI = false;
+		pchat->useGUI = false;
 		int choice;
 		while((choice = getopt(argc,argv,"hj:u:")) != -1)
 		{
 			switch(choice)
 			{
 				case 'h': // host a room
-					pchat.network.host();
+					pchat->network.host();
 					break;
 				case 'j': // join a room, need an address
-//					pchat.network.join(optarg);
+//					pchat->network.join(optarg);
 					break;
 				case 'u': // enter a username
-					pchat.peer.setName(optarg);
+					pchat->peer.setName(optarg);
 					break;
 				default:
 					return EXIT_FAILURE;
@@ -42,8 +42,8 @@ int main(const int argc, char *argv[])
 		while(true)
 		{
 			// Print Users
-			for(int i = 0; i < pchat.network.getNumberPeers(); ++i)
-				std::cout << i << ": " << pchat.network[i]->getName() << '\n';
+			for(int i = 0; i < pchat->network.getNumberPeers(); ++i)
+				std::cout << i << ": " << pchat->network[i]->getName() << '\n';
 
 			// Grab user input for other functions (volume, kick, leave)
 			std::string input;
@@ -51,7 +51,7 @@ int main(const int argc, char *argv[])
 
 			if(input == "q")
 			{
-				pchat.network.disconnect();
+				pchat->network.disconnect();
 				break;
 			}
 
@@ -63,13 +63,13 @@ int main(const int argc, char *argv[])
 			if(input == "v") // -v (+/- num)
 			{
 				//set volume
-//				pchat.audio.setOutputVolume((float) input); // still needs string parsing
+//				pchat->audio.setOutputVolume((float) input); // still needs string parsing
 			}
 
 			if(input == "m") // -m (user)
 			{
 				//mute someone
-				pchat.audio.setMuteMic(true);
+				pchat->audio.setMuteMic(true);
 			}
 
 		}
@@ -77,7 +77,7 @@ int main(const int argc, char *argv[])
 	else
 	{
 		// std::cout << "GUI mode" << std::endl;
-		pchat.GUI.runGui(argc,argv);
+		pchat->GUI.runGui(argc,argv);
 	}
 
 	return EXIT_SUCCESS;
