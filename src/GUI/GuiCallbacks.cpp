@@ -17,6 +17,11 @@ void host_callback(GtkWidget *widget, gpointer data)
 {
 	PC_GuiHandler* gh = static_cast<PC_GuiHandler*>(data);
 	GtkWidget* widget_box = gh->get_widget_box();
+	
+	gchar *name_text;
+	name_text = gh->get_child_entry_text(widget_box, "NameEntry");
+	gh->set_user_name(name_text);
+	
 	gh->hostButtonPressed(widget, widget_box);
 }
 
@@ -24,6 +29,14 @@ void join_callback(GtkWidget *widget, gpointer data)
 {
 	PC_GuiHandler* gh = static_cast<PC_GuiHandler*>(data);
 	GtkWidget* widget_box = gh->get_widget_box();
+	
+	gchar *name_text;
+	gchar *link_text;
+	name_text = gh->get_child_entry_text(widget_box, "NameEntry");
+	link_text = gh->get_child_entry_text(widget_box, "LinkEntry");
+	gh->set_user_name(name_text);
+	gh->set_user_link(link_text);
+	
 	gh->joinButtonPressed(widget, widget_box);
 }
 

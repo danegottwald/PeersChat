@@ -7,8 +7,9 @@
  */
 
 
-#include <gtk/gtk.h> // https://developer.gnome.org/gtk3/stable/
+#include <gtk/gtk.h> // Using GTK+ 3.0: https://developer.gnome.org/gtk3/stable/
 #include <regex>
+#include <cstring>
 
 
 // Pre-Compiler Constants
@@ -20,8 +21,10 @@
 // Widget padding: pads between widgets
 #define DEFAULT_WIDGET_PADDING 16
 
+// Max name length: Cannot exceed # of characters
+#define MAX_NAME_LEN 18
 
-// GuiHandler Class ----------------------------------------------------------------------
+// GuiHandler Class -----------------------------------------------------------------------
 /* GuiHandler: Class for encapsulating GUI functionality 
  *
  * @member app  Pointer to the GtkApplication, a GTK+ object that automatically
@@ -30,9 +33,14 @@
  * @member widget_box  Pointer to the primary GtkWidget container, used
  *                     in order to access GtkWidget data from callback functions
  *
+ * @member name_list  Pointer to GtkWidget holding rows that hold names of users,
+ *                    also containing kick/mute buttons
+ *
  * @member user_name  Holds text data for username from textbox entry
  *
  * @member user_link  Holds text data for joining link from textbox entry
+ *
+ * @member is_host  Boolean that's true if GuiHandler user is hosting a session
  *
  * @constructor PC_GuiHandler()  Default contructor, initializes private fields as well as
  *                               GtkApplication (serves as root to GtkObjects).
@@ -43,6 +51,17 @@
  *                      @return (int): Returns status code at the end of GUI event loop.
  *                                     (output of g_application_run)
  *
+ * @method void add_host_to_session(1)  Adds a host to the GUI name_list for an ongoing
+ *                                      session.
+ *                                        @prereq: GUI is already running through runGui()  
+ *                                        @param name: User's name to be displayed
+ *                                                     in session
+ *
+ * @method void add_user_to_session(1)  Adds a user (non-host) to the GUI name_list for an 
+ *                                      ongoing session.
+ *                                        @prereq: GUI is already running through runGui()  
+ *                                        @param name: User's name to be displayed
+ *                                                     in session
  * ===Callback Functions===
  * Note: Callback functions of GUI class accessed externally through GuiCallbacks.cpp
  *
@@ -84,15 +103,22 @@ class PC_GuiHandler
 private:
 	GtkApplication *app;
 	GtkWidget *widget_box;
+	GtkWidget *name_list;
 	
 	gchar *user_name;
 	gchar *user_link;
+	
+	bool is_host;
 	
 // Constructor, destructor, and initializer
 public:
 	PC_GuiHandler();
 	~PC_GuiHandler();
 	int runGui(int argc, char *argv[]);
+
+// Public functions for adding users to session 
+	void add_host_to_session(const gchar *name);
+	void add_user_to_session(const gchar *name, bool kickable);
 
 // Callback Functions
 	void activate(GtkApplication *app, gpointer data);
@@ -102,6 +128,8 @@ public:
 	void leaveButtonPressed(GtkWidget *widget, gpointer data);	
 
 // Setters + Getters providing access for GuiCallbacks.cpp
+	GtkWidget* get_widget_by_name(GtkWidget *container, const gchar *widget_name);
+	gchar *get_child_entry_text(GtkWidget *container, const gchar *entry_name);
 	GtkWidget* get_widget_box();
 	
 	void set_user_name(gchar *entry_text);
@@ -111,11 +139,9 @@ public:
 	
 // Utility Functions
 private:
-	GtkWidget* get_widget_by_name(GtkWidget *container, const gchar *widget_name);
 	void hide_all_child_widgets(GtkWidget *container);
-	gchar *get_child_entry_text(GtkWidget *container, const gchar *entry_name);
 	bool entry_text_is_valid(gchar *entry_text);
-	void add_name_to_list(GtkWidget *list, gchar *name);
+	GtkWidget* create_new_user_row(const gchar *name, bool is_host, bool kickable);
 	void setup_lobby(GtkWidget *parent, GtkWidget *lobby_box);
 	void show_error_popup(const gchar *message);
 	void username_popup();
