@@ -270,7 +270,7 @@ GtkWidget* PC_GuiHandler::create_new_user_row(const gchar *name, bool is_host, b
 		gtk_box_pack_end(GTK_BOX(new_row), kick_button, FALSE, FALSE, FALSE);
 	}
 		
-	mute_button = gtk_button_new_with_label("Mute");
+	mute_button = gtk_toggle_button_new_with_label("Mute");
 	g_signal_connect(mute_button, "clicked", G_CALLBACK(mute_callback), this);
 	gtk_box_pack_end(GTK_BOX(new_row), mute_button, FALSE, FALSE, FALSE);
 	
