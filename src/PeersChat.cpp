@@ -29,7 +29,7 @@ int main(const int argc, char *argv[])
 					pchat.network.host();
 					break;
 				case 'j': // join a room, need an address
-					pchat.network.join(optarg);
+//					pchat.network.join(optarg);
 					break;
 				case 'u': // enter a username
 					pchat.peer.setName(optarg);
@@ -43,7 +43,7 @@ int main(const int argc, char *argv[])
 		{
 			std::string input;
 			// Grab user input for other functions (volume, kick, leave)
-			getline(cin,input);
+			getline(std::cin,input);
 
 			if(input == "-q")
 			{
@@ -59,7 +59,7 @@ int main(const int argc, char *argv[])
 			if(input == "-v") // -v (+/- num)
 			{
 				//set volume
-				pchat.audio.setOutputVolume((float) input); // still needs string parsing
+//				pchat.audio.setOutputVolume((float) input); // still needs string parsing
 			}
 
 			if(input == "-m") // -m (user)
@@ -73,7 +73,7 @@ int main(const int argc, char *argv[])
 	else
 	{
 		// std::cout << "GUI mode" << std::endl;
-		peer.GUI.runGui(argc,argv);
+		pchat.GUI.runGui(argc,argv);
 	}
 
 	return EXIT_SUCCESS;
