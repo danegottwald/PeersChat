@@ -18,6 +18,8 @@ enum NETCODES {
                 ACCEPT=0x84,    // Accept request to join
                 PROPOSE=0x5,    // Ask current peers if new peer can join
                 DISCONNECT=0x6, // Disconnect from call; Leave server
+                REQN=0x08,      // Request Peer Name
+                SENDN=0x88,     // Send Peer Name
                 CLOSE=0x7       // Close TCP pipe; end request
 };
 

@@ -397,6 +397,7 @@ private:
 	bool running = false;
 	std::unique_ptr<std::thread> listen_thread;
 	std::unique_ptr<std::thread> recv_thread;
+	char myName[MAX_NAME_LEN + 1] = {0};
 
 public:
 	PeersChatNetwork();
@@ -404,8 +405,13 @@ public:
 
 	NPeer* operator[](const sockaddr_in &addr) noexcept;
 	NPeer* operator[](const int &x) noexcept;
+	NPeer* operator[](const std::string &x) noexcept;
+
+	std::string getMyName() noexcept;
+	bool setMyName(const std::string&) noexcept;
 
 	bool join(const sockaddr_in &addr) noexcept;
+	void getNames() noexcept;
 	bool host() noexcept;
 	void disconnect() noexcept;
 	inline int getNumberPeers() { return this->size; }
@@ -422,6 +428,7 @@ private:
 	void sendPeers(int sock);
 	void connect(int sock);
 	void disconnect(int sock);
+	std::string getName(int sock) noexcept;
 
 	void receive_audio_thread(); //thread that receives audio
 	void listen_on_tcp_thread();

@@ -518,6 +518,50 @@ NPeer* PeersChatNetwork::operator[](const int &x) noexcept
 }
 
 
+NPeer* PeersChatNetwork::operator[](const std::string &x) noexcept
+{
+	// Return a pointer to an NPeer IFF there is exactly one NPeer with that name
+	NPeer* ret = NULL;
+	std::lock_guard<std::mutex> lock(this->peers_lock);
+	for(int i = 0; i < this->size; ++i)
+		if(ret && (peers[i]->getName() == x))
+			return NULL;
+		else if(!ret && (peers[i]->getName() == x))
+			ret = peers[i].get();
+
+	return ret;
+}
+
+
+std::string PeersChatNetwork::getMyName() noexcept
+{
+	if(myName[0] == 0)
+		return "PeersChatClient";
+	else return this->myName;
+}
+
+
+bool PeersChatNetwork::setMyName(const std::string &name) noexcept
+{
+	if(name.size() <= 0 || name.size() > MAX_NAME_LEN)
+		return false;
+
+	for(unsigned long i = 0; i < name.size(); i++)
+	{
+		if(std::isalnum(name[i]))
+			continue;
+		else if((name[i] == '-') && (name[i] == '_'))
+			continue;
+		else
+			return false;
+	}
+
+	std::strncpy(this->myName, name.c_str(), MAX_NAME_LEN);
+	return true;
+
+}
+
+
 // Public Functions
 bool PeersChatNetwork::join(const sockaddr_in &addr) noexcept
 {
@@ -566,6 +610,17 @@ bool PeersChatNetwork::join(const sockaddr_in &addr) noexcept
 	else
 		this->stop();
 	return false;
+}
+
+
+void PeersChatNetwork::getNames() noexcept
+{
+	for(int i = 0; i < this->size; ++i)
+	{
+		NPeerAttorney::createTCP(this->peers[i].get());
+		this->peers[i]->setName(this->getName(NPeerAttorney::getTCP(this->peers[i].get())));
+		NPeerAttorney::destroyTCP(this->peers[i].get());
+	}
 }
 
 
@@ -882,8 +937,53 @@ void PeersChatNetwork::connect(int sock)
 
 void PeersChatNetwork::disconnect(int sock)
 {
-	uint8_t buff = DISCONNECT;
-	send_timeout(sock, &buff, 1, MSG_NOSIGNAL);
+	uint8_t buff[3];
+	buff[0] = DISCONNECT;
+	buff[1] = (uint8_t) ((PORT >> 8) & 0xFF);
+	buff[2] = (uint8_t) (PORT & 0xFF);
+	send_timeout(sock, &buff, 3, MSG_NOSIGNAL);
+}
+
+
+std::string PeersChatNetwork::getName(int sock) noexcept
+{
+	// Request Name
+	uint8_t buffer[300];
+	buffer[0] = REQN;
+	buffer[1] = (uint8_t) ((PORT >> 8) & 0xFF);
+	buffer[2] = (uint8_t) (PORT & 0xFF);
+	if(3 != send_timeout(sock, buffer, 3, MSG_NOSIGNAL))
+	{
+		#ifdef NET_DEBUG
+		std::cerr << "PeersChatNetwork::getName send_timeout(4): Failed" << std::endl;
+		#endif
+		return "";
+	}
+
+	// Receive Data Back and Perform Error Checks
+	ssize_t r = recv_timeout(sock, buffer, 300, MSG_WAITALL);
+	if(r < 2)
+	{
+		#ifdef NET_DEBUG
+		std::cerr << "PeersChatNetwork::getName recv_timeout(4) Failed" << st::endl;
+		#endif
+		return "";
+	}
+
+	if(buffer[0] != SENDN)
+	{
+		#ifdef NET_DEBUG
+		std::cerr << "PeersChatNetwork::getName Failed: Received wrong type of response" << std::endl;
+		#endif
+		return "";
+	}
+
+	// Parse Name
+	std::string name = "";
+	for(unsigned i = 0; i < buffer[2]; ++i)
+		name.push_back((char)buffer[3 + i]);
+
+	return name;
 }
 
 
@@ -936,6 +1036,9 @@ void PeersChatNetwork::listen_on_tcp_thread()
 	sockaddr_in addr;
 	while(running)
 	{
+		if(peer > 0) close(peer);
+		peer = -1;
+
 		// Accept connection
 		if((peer = accept(tcp_listen, (sockaddr*) &addr, (socklen_t*) sizeof(addr))) < 0)
 		{
@@ -944,46 +1047,65 @@ void PeersChatNetwork::listen_on_tcp_thread()
 		}
 
 		// Get Req Type
-		if(1 != recv_timeout(peer, buffer, 1, MSG_WAITALL))
-		{
-			close(peer);
-			continue;
-		}
+		if(1 != recv_timeout(peer, buffer, 1, MSG_WAITALL)) continue;
 
 		// Handle Req Type
-		if(buffer[0] == CONNECT)
+		if(buffer[0] == CONNECT) //--------------------------------------------------
 		{
-			if(2 != recv_timeout(peer, &addr.sin_port, 2, 0)) {
-				close(peer);
-				continue;
-			}
+			if(2 != recv_timeout(peer, &addr.sin_port, 2, MSG_WAITALL)) continue;
+
 			#ifdef NET_DEBUG
 			inet_ntop(AF_INET, &addr.sin_addr, (char*)buffer, 50);
 			printf("CONNECT Request from %s:%" PRIu16 "\n", buffer, ntohs(addr.sin_port));
 			connectFulfill(peer, addr);
 			#endif
 		}
-		else if(buffer[0] == PROPOSE)
+		else if(buffer[0] == PROPOSE) //---------------------------------------------
 		{
 			#ifdef NET_DEBUG
-			if(inet_ntop(AF_INET, &addr.sin_addr, (char*) buffer, 50) == NULL) {
-				close(peer);
-				continue;
-			}
+			if(inet_ntop(AF_INET, &addr.sin_addr, (char*) buffer, 50) == NULL) continue;
+
 			#endif
-			recv_timeout(peer, &addr.sin_addr.s_addr, 4, 0);
-			recv_timeout(peer, &addr.sin_port, 2, 0);
+			recv_timeout(peer, &addr.sin_addr.s_addr, 4, MSG_WAITALL);
+			recv_timeout(peer, &addr.sin_port, 2, MSG_WAITALL);
 			#ifdef NET_DEBUG
 			printf("PROPOSE Request from %s to add ", buffer);
-			if(inet_ntop(AF_INET, &addr.sin_addr, (char*) buffer, 50) == NULL) {
-				close(peer);
-				continue;
-			}
+			if(inet_ntop(AF_INET, &addr.sin_addr, (char*) buffer, 50) == NULL) continue;
 			printf("%s:%" PRIu16 "\n", buffer, ntohs(addr.sin_port));
 			#endif
 			proposeFulfill(peer, addr);
 		}
+		else if(buffer[0] == DISCONNECT) //------------------------------------------
+		{
+			if(2 != recv_timeout(peer, &addr.sin_port, 2, MSG_WAITALL)) continue;
+			removePeer(addr);
+		}
+		else if(buffer[0] == REQN) //------------------------------------------------
+		{
+			// Get Data and Find Peer
+			if(2 != recv_timeout(peer, &addr.sin_port, 2, MSG_WAITALL)) continue;
+			NPeer *peer_ptr = (*this)[addr];
 
+			#ifdef NET_DEBUG
+			inet_ntop(AF_INET, &addr.sin_addr, std::memset(buffer, 0, INET_ADDRSTRLEN+1) , INET_ADDRSTRLEN);
+			printf("REQN request from %s:%" PRIu16 "\n", buffer, ntohs(addr.sin_port));
+			#endif
+
+			// Requester is not affiliated with you
+			if(!peer_ptr)
+			{
+				std::cerr << "Failed REQN Request: Peer Not Recognized" << std::endl;
+				continue;
+			}
+
+			// Send them your name
+			std::string name = this->getMyName();
+			buffer[0] = SENDN;
+			buffer[1] = (uint8_t) name.length();
+			for(int i = 0; i < buffer[1]; ++i)
+				buffer[2 + i] = name[i];
+			send_timeout(peer, buffer, 2 + buffer[2], MSG_NOSIGNAL);
+		} // ------------------------------------------------------------------------
 
 		// End Request
 		close(peer);
@@ -1078,7 +1200,7 @@ bool PeersChatNetwork::proposeFulfill(int peer, sockaddr_in addr)
 
 	// Get his response on whether the friend is joining
 	uint8_t tag = DENY;
-	recv_timeout(peer, &tag, 1, 0);
+	recv_timeout(peer, &tag, 1, MSG_WAITALL);
 
 	#ifdef NET_DEBUG
 	std::cout << "Peer " << ((tag==ACCEPT)?"ACCEPTED":"DENIED") << " his friend joining" << std::endl;
