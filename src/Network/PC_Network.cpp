@@ -970,7 +970,7 @@ std::string PeersChatNetwork::getName(int sock) noexcept
 	if(r < 2)
 	{
 		#ifdef NET_DEBUG
-		std::cerr << "PeersChatNetwork::getName recv_timeout(4) Failed" << st::endl;
+		std::cerr << "PeersChatNetwork::getName recv_timeout(4) Failed" << std::endl;
 		#endif
 		return "";
 	}
@@ -1092,7 +1092,7 @@ void PeersChatNetwork::listen_on_tcp_thread()
 			NPeer *peer_ptr = (*this)[addr];
 
 			#ifdef NET_DEBUG
-			inet_ntop(AF_INET, &addr.sin_addr, std::memset(buffer, 0, INET_ADDRSTRLEN+1) , INET_ADDRSTRLEN);
+			inet_ntop(AF_INET, &addr.sin_addr, (char*)std::memset(buffer, 0, INET_ADDRSTRLEN+1) , INET_ADDRSTRLEN);
 			printf("REQN request from %s:%" PRIu16 "\n", buffer, ntohs(addr.sin_port));
 			#endif
 
