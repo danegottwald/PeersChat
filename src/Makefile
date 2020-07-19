@@ -1,8 +1,8 @@
-CC= g++
-CFLAGS= -std=c++14 -Wall -pedantic -Wpedantic -O2
-LFLAGS= $$(pkg-config --libs portaudio-2.0 opus gtk+-3.0)
+CC= gcc
+INCLUDE= -I Network -I Audio -I GUI
+CFLAGS= -std=c++14 -Wall -Wextra -pedantic -Wpedantic -O2 $(INCLUDE)
+LFLAGS= -lstdc++ $$(pkg-config --libs portaudio-2.0 opus gtk+-3.0)
 TARGET= PeersChat
-PREFIX= ./src
 
 all: $(TARGET) tidy
 
@@ -20,7 +20,7 @@ PC_Audio.o: ./Audio/PC_Audio.cpp ./Audio/PC_Audio.hpp
 	$(CC) $(CFLAGS) $$(pkg-config --cflags opus portaudio-2.0) -c $<
 
 PC_Network.o: ./Network/PC_Network.cpp ./Network/PC_Network.hpp
-	$(CC) $(CFLAGS) $$(pkg-config --cflags opus portaudio-2.0) -c $<
+	$(CC) $(CFLAGS) -c $<
 
 PC_Gui.o: ./GUI/PC_Gui.cpp ./GUI/PC_Gui.hpp
 	$(CC) $(CFLAGS) $$(pkg-config --cflags gtk+-3.0) -c $<

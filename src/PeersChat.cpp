@@ -1,8 +1,8 @@
 #include <string>
 #include <unistd.h>
-#include "PC_Network.hpp"
-#include "PC_Audio.hpp"
-#include "PC_GUI.hpp"
+#include <PC_Network.hpp>
+#include <PC_Audio.hpp>
+#include <PC_Gui.hpp>
 
 class PeersChat
 {
