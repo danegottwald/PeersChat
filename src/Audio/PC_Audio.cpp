@@ -58,9 +58,10 @@ APeer::APeer() {
  * decoder state.
  */
 APeer::~APeer() {
+	Pa_AbortStream(stream);
+	Pa_CloseStream(stream);
 	opus_encoder_destroy(encoder);
 	opus_decoder_destroy(decoder);
-	Pa_CloseStream(stream);
 	Pa_Terminate();
 }
 
