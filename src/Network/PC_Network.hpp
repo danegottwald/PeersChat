@@ -82,11 +82,19 @@ static inline int close(int &x) { return closesocket(x); }
 #endif
 
 
+// Debug
+#ifdef DEBUG
+	#define NET_DEBUG
+#endif
+
+
 // Universal Includes
 #include <iostream>
 #include <cstdint>
 #include <cinttypes>
 #include <cstring>
+#include <cctype>
+#include <string>
 #include <vector>
 #include <queue>
 #include <functional>
@@ -102,11 +110,20 @@ static inline int close(int &x) { return closesocket(x); }
 
 // Pre-Compiler Constants
 #define BUFFER_SIZE 4096
+#define MAX_NAME_LEN 18
 #define MAX_PEERS 64
 
 
 // Globals
-extern std::chrono::milliseconds PACKET_DELAY; //defaults to 50ms
+	// Delay to give packets time to catch up and sort
+extern std::chrono::milliseconds PACKET_DELAY;
+	// Time to give threads time to end before forcing them to
+extern std::chrono::milliseconds PEERS_CHAT_DESTRUCT_TIMEOUT;
+	// How long it takes for a send/recv to timeout
+extern std::chrono::milliseconds SOCKET_TIMEOUT;
+	// Time to give PEER to send you audio before they timeout
+extern std::chrono::milliseconds PEER_TIMEOUT;
+	// Port Number to handle UDP/TCP
 extern uint16_t PORT;
 
 
@@ -221,10 +238,9 @@ class NPeer
 	// Members
 private:
 	int tcp = -1;
-		// UDP Socket for audio to/from everyone | TCP Socket for comms to this Peer
 	static int udp;
-		// Peer Address
 	sockaddr_in destination;
+	char pname[MAX_NAME_LEN+1];
 		// Audio Incoming
 	std::priority_queue<std::unique_ptr<AudioInPacket>,
 	                    std::vector<std::unique_ptr<AudioInPacket>>,
@@ -246,8 +262,13 @@ private:
 public:
 	NPeer() noexcept;
 	NPeer(const char* ip, const uint16_t &port);
-	NPeer(sockaddr_in &addr);
+	NPeer(const sockaddr_in &addr) noexcept;
 	~NPeer() noexcept;
+
+	// Name
+	std::string getName() noexcept;
+	bool setName(std::string name) noexcept;
+
 
 	// Sending Audio -- All the functions you need to send audio
 	AudioOutPacket* getEmptyOutPacket() noexcept;
@@ -258,7 +279,7 @@ public:
 	// Receiving Audio -- All the functions you need to receive audio
 	AudioInPacket* getEmptyInPacket() noexcept;
 	void retireEmptyInPacket(AudioInPacket * &packet) noexcept;
-	void enqueue_in(AudioInPacket * &packet);
+	void enqueue_in(AudioInPacket *packet);
 	AudioInPacket* getAudioInPacket() noexcept;
 	inline uint32_t getInPacketId() noexcept { return in_packet_id; }
 
@@ -366,7 +387,10 @@ class PeersChatNetwork
 {
 	// Members
 private:
+	char myname[MAX_NAME_LEN+1] = {0};
 	std::vector<std::unique_ptr<NPeer>> peers;
+	std::mutex peers_lock;
+	int size = 0;
 	int tcp_listen = -1;
 	bool accept_direct_join = false;
 	bool accept_indirect_join = true;
@@ -378,21 +402,23 @@ public:
 	PeersChatNetwork();
 	~PeersChatNetwork();
 
-	NPeer* operator[](sockaddr_in &addr) noexcept;
+	NPeer* operator[](const sockaddr_in &addr) noexcept;
 	NPeer* operator[](const int &x) noexcept;
 
-	bool join(sockaddr_in &addr) noexcept;
+	bool join(const sockaddr_in &addr) noexcept;
 	bool host() noexcept;
-	bool start() noexcept;
-	void stop() noexcept;
-	inline int getNumberPeers() { return peers.size(); }
+	void disconnect();
+	inline int getNumberPeers() { return this->size; }
 
 private:
-	bool propose(sockaddr_in &subject, int sock); //ask peer if subject can join
-	bool respond(bool decision, int sock); //accept/deny
-	bool getResponse(int sock); //get accept/deny w/ timeout
-	bool addPeer(sockaddr_in &addr); //new person joining group, add them
-	bool requestPeers(int sock, std::vector<sockaddr_in>& provide_empty_vector); //request a peers peers
+	bool start() noexcept;
+	void stop() noexcept;
+	bool propose(sockaddr_in &subject, int sock) noexcept;
+	bool respond(bool decision, int sock) noexcept;
+	bool getResponse(int sock) noexcept;
+	bool addPeer(const sockaddr_in &addr) noexcept; //new person joining group, add them
+	void removePeer(sockaddr_in &addr) noexcept;
+	bool requestPeers(int sock, std::vector<sockaddr_in>& provide_empty_vector) noexcept;
 	void sendPeers(int sock);
 	void connect(int sock);
 	void disconnect(int sock);
