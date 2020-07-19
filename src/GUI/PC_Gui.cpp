@@ -35,7 +35,7 @@ int PC_GuiHandler::runGui(int argc, char *argv[])
 	return status;
 }
 
-// Functions for adding users to session
+// Functions for adding/removing users to/from session
 
 void PC_GuiHandler::add_host_to_session(const gchar *name)
 {
@@ -47,6 +47,25 @@ void PC_GuiHandler::add_user_to_session(const gchar *name, bool kickable)
 {
 	GtkWidget *new_row = create_new_user_row(name, FALSE, kickable);
 	gtk_container_add(GTK_CONTAINER(name_list), new_row);
+}
+
+void PC_GuiHandler::remove_name_from_session(const gchar *name)
+{
+	GList *rows = gtk_container_get_children(GTK_CONTAINER(name_list));
+	
+	while(rows != NULL)
+	{
+		GtkWidget *row = GTK_WIDGET(rows->data);
+		// Row returns ListBoxRow obj, must get box inside
+		GtkWidget *row_box = gtk_bin_get_child(GTK_BIN(row));
+		const gchar* row_name = gtk_widget_get_name(row_box);
+		if(strcmp(row_name, name) == 0)
+		{
+			gtk_container_remove(GTK_CONTAINER(name_list), row);
+			break;
+		}
+		rows = rows->next;
+	}
 }
 
 // GTK+ Callback functions bound to GtkObjects
@@ -86,11 +105,11 @@ void PC_GuiHandler::activate(GtkApplication *app, gpointer data)
 	gtk_container_add(GTK_CONTAINER(widget_box), button_box);
 	
 	host_button = gtk_button_new_with_label("Host Session");
-	g_signal_connect(host_button, "clicked", G_CALLBACK(host_callback), this);
+	g_signal_connect(host_button, "clicked", G_CALLBACK(host_button_callback), this);
 	gtk_container_add(GTK_CONTAINER(button_box), host_button);
 	
 	join_button = gtk_button_new_with_label("Join Session");
-	g_signal_connect(join_button, "clicked", G_CALLBACK(join_callback), this);
+	g_signal_connect(join_button, "clicked", G_CALLBACK(join_button_callback), this);
 	gtk_container_add(GTK_CONTAINER(button_box), join_button);
 
 	// Pull focus away from text entries to display placeholder text;
@@ -259,16 +278,19 @@ GtkWidget* PC_GuiHandler::create_new_user_row(const gchar *name, bool is_host, b
 	{
 		gtk_label_set_text(GTK_LABEL(name_label), name);
 	}
+	gtk_widget_set_name(name_label, "row_name");
 	gtk_box_pack_start(GTK_BOX(new_row), name_label, FALSE, FALSE, FALSE);
 	
 	if(kickable)
 	{
 		GtkWidget *kick_button;
 		kick_button = gtk_button_new_with_label("Kick");
+		g_signal_connect(kick_button, "clicked", G_CALLBACK(kick_button_callback), this);
 		gtk_box_pack_end(GTK_BOX(new_row), kick_button, FALSE, FALSE, FALSE);
 	}
 		
-	mute_button = gtk_button_new_with_label("Mute");
+	mute_button = gtk_toggle_button_new_with_label("Mute");
+	g_signal_connect(mute_button, "clicked", G_CALLBACK(mute_button_callback), this);
 	gtk_box_pack_end(GTK_BOX(new_row), mute_button, FALSE, FALSE, FALSE);
 	
 	return new_row;
@@ -288,7 +310,7 @@ void PC_GuiHandler::setup_lobby(GtkWidget *parent, GtkWidget *lobby_box)
 
 	GtkWidget *leave_button = gtk_button_new_with_label("Leave Session");
 	gtk_box_pack_end(GTK_BOX(lobby_box), leave_button, FALSE, FALSE, 0);
-	g_signal_connect(leave_button, "clicked", G_CALLBACK(leave_callback), this);
+	g_signal_connect(leave_button, "clicked", G_CALLBACK(leave_button_callback), this);
 
 	// new box with output label and slider
 	GtkWidget *outputBox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, DEFAULT_WIDGET_PADDING);
@@ -303,10 +325,16 @@ void PC_GuiHandler::setup_lobby(GtkWidget *parent, GtkWidget *lobby_box)
 	GtkWidget *outputLabel = gtk_label_new((const gchar*) "Output Volume");
 	gtk_box_pack_end(GTK_BOX(outputBox), outputLabel, FALSE, FALSE, 0);
 	
-	if(is_host)
+	if(is_host) 
+	{
 		add_host_to_session(user_name);
+		add_user_to_session("TestUser", TRUE);
+	}
 	else
+	{
 		add_user_to_session(user_name, FALSE);
+		add_host_to_session("TestHost");
+	}
 	gtk_widget_show_all(lobby_box);
 }
 

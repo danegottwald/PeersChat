@@ -13,7 +13,7 @@ void activate_callback(GtkApplication *app, gpointer data)
 	gh->activate(app, NULL);
 }
 
-void host_callback(GtkWidget *widget, gpointer data) 
+void host_button_callback(GtkWidget *widget, gpointer data) 
 {
 	PC_GuiHandler* gh = static_cast<PC_GuiHandler*>(data);
 	GtkWidget* widget_box = gh->get_widget_box();
@@ -25,7 +25,7 @@ void host_callback(GtkWidget *widget, gpointer data)
 	gh->hostButtonPressed(widget, widget_box);
 }
 
-void join_callback(GtkWidget *widget, gpointer data) 
+void join_button_callback(GtkWidget *widget, gpointer data) 
 {
 	PC_GuiHandler* gh = static_cast<PC_GuiHandler*>(data);
 	GtkWidget* widget_box = gh->get_widget_box();
@@ -40,6 +40,27 @@ void join_callback(GtkWidget *widget, gpointer data)
 	gh->joinButtonPressed(widget, widget_box);
 }
 
+void mute_button_callback(GtkWidget *widget, gpointer data)
+{
+	GtkWidget* list_row = gtk_widget_get_parent(widget);
+	const gchar* name = gtk_widget_get_name(list_row);
+	
+	g_print("Mute Button Pressed\n");
+	g_print("Name of user: %s\n", name); 
+}
+
+void kick_button_callback(GtkWidget *widget, gpointer data)
+{
+	PC_GuiHandler* gh = static_cast<PC_GuiHandler*>(data);
+	GtkWidget* list_row = gtk_widget_get_parent(widget);
+	const gchar* name = gtk_widget_get_name(list_row);
+	
+	g_print("Kick Button Pressed\n");
+	g_print("Name of user: %s\n", name);
+	
+	gh->remove_name_from_session(name);
+}
+
 void volume_callback(GtkVolumeButton *v1, gdouble value, gpointer data)
 {
 	PC_GuiHandler* gh = static_cast<PC_GuiHandler*>(data);
@@ -47,7 +68,7 @@ void volume_callback(GtkVolumeButton *v1, gdouble value, gpointer data)
 	gh->outputVolChanged(v1, value, widget_box);
 }
 
-void leave_callback(GtkWidget *widget, gpointer data) 
+void leave_button_callback(GtkWidget *widget, gpointer data) 
 {
 	PC_GuiHandler* gh = static_cast<PC_GuiHandler*>(data);
 	GtkWidget* widget_box = gh->get_widget_box();
