@@ -1,28 +1,29 @@
-CC= gcc
-CFLAGS= -std=c++14 -Wall -Werror -pedantic -Wpedantic -O2
+CC= g++
+CFLAGS= -std=c++14 -Wall -pedantic -Wpedantic -O2
 LFLAGS= $$(pkg-config --libs portaudio-2.0 opus gtk+-3.0)
 TARGET= PeersChat
 PREFIX= ./src
 
 all: $(TARGET) tidy
 
-$(TARGET): $(TARGET).o PC_Audio.o PC_Network.o GUI.o
-	$(CC) $(LFLAGS) $^ -o $(TARGET)
+$(TARGET): $(TARGET).o PC_Audio.o PC_Network.o PC_Gui.o
+	$(CC) $^ -o $(TARGET) $(LFLAGS)
 
 Audio: PC_Audio.o
 Network: PC_Network.o
-GUI: #insert GUI filename.o here
+GUI: PC_Gui.o
 
 $(TARGET).o: $(TARGET).cpp
-	$(CC) $(CFLAGS) -c $<
+	$(CC) $(CFLAGS) $$(pkg-config --cflags opus portaudio-2.0 gtk+-3.0) -c $<
 
-PC_Audio.o: ./src/Audio/PC_Audio.cpp ./src/Audio/PC_Audio.hpp
+PC_Audio.o: ./Audio/PC_Audio.cpp ./Audio/PC_Audio.hpp
 	$(CC) $(CFLAGS) $$(pkg-config --cflags opus portaudio-2.0) -c $<
 
-PC_Network.o: ./src/Network/PC_Network.cpp ./src/Network/PC_Network.hpp
-	$(CC) $(CFLAGS) -c $<
+PC_Network.o: ./Network/PC_Network.cpp ./Network/PC_Network.hpp
+	$(CC) $(CFLAGS) $$(pkg-config --cflags opus portaudio-2.0) -c $<
 
-#create GUI filename.o rule/build
+PC_Gui.o: ./GUI/PC_Gui.cpp ./GUI/PC_Gui.hpp
+	$(CC) $(CFLAGS) $$(pkg-config --cflags gtk+-3.0) -c $<
 
 tidy:
 	$(RM) $$(find . -type f -name '*.o')
