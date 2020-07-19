@@ -576,6 +576,30 @@ bool PeersChatNetwork::host() noexcept
 }
 
 
+void PeersChatNetwork::disconnect() noexcept
+{
+	{
+		std::lock_guard<std::mutex> lock(this->peers_lock);
+
+		// Open TCP To All Peers
+		std::vector<int> peer_fd;
+		for(int i = 0; i < this->getNumberPeers(); ++i)
+		{
+			NPeer *peer = this->peers[i].get();
+			NPeerAttorney::createTCP(peer);
+			peer_fd.push_back(NPeerAttorney::getTCP(peer));
+		}
+
+		// Tell Them you are disconnecting
+		for(const int &fd : peer_fd)
+			disconnect(fd);
+	}
+
+	// End it All
+	this->stop();
+}
+
+
 bool PeersChatNetwork::start() noexcept
 {
 	// Create TCP Server Socket

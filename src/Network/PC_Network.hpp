@@ -407,7 +407,7 @@ public:
 
 	bool join(const sockaddr_in &addr) noexcept;
 	bool host() noexcept;
-	void disconnect();
+	void disconnect() noexcept;
 	inline int getNumberPeers() { return this->size; }
 
 private:
