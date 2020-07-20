@@ -10,7 +10,8 @@ PC_GuiHandler::PC_GuiHandler()
 	name_list = NULL;
 	
 	user_name = NULL;
-	user_link = NULL;	
+	user_link = NULL;
+	user_port = NULL;
 	is_host = FALSE;
 
 	// Generate Unique Name by appending unix time in ms
@@ -104,7 +105,9 @@ void PC_GuiHandler::activate(GtkApplication *app)
 	GtkWidget *window;
 	GtkWidget *peerschat_label;
 	GtkWidget *name_entry;
+	GtkWidget *entry_box;
 	GtkWidget *link_entry;
+	GtkWidget *port_entry;
 	GtkWidget *button_box;
 	GtkWidget *host_button;
 	GtkWidget *join_button;
@@ -125,10 +128,19 @@ void PC_GuiHandler::activate(GtkApplication *app)
 	gtk_entry_set_placeholder_text(GTK_ENTRY(name_entry), "Enter Username");
 	gtk_container_add(GTK_CONTAINER(widget_box), name_entry);
 	
+	entry_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+	gtk_widget_set_name(entry_box, "EntryBox");
+	gtk_container_add(GTK_CONTAINER(widget_box), entry_box);
+	
 	link_entry = gtk_entry_new();
 	gtk_widget_set_name(link_entry, "LinkEntry");
-	gtk_entry_set_placeholder_text(GTK_ENTRY(link_entry), "Host = port (8080);  User = IP:port");
-	gtk_container_add(GTK_CONTAINER(widget_box), link_entry);
+	gtk_entry_set_placeholder_text(GTK_ENTRY(link_entry), "Enter IP for Joining");
+	gtk_box_pack_start(GTK_BOX(entry_box), link_entry, TRUE, TRUE, 0);
+	
+	port_entry = gtk_entry_new();
+	gtk_widget_set_name(port_entry, "PortEntry");
+	gtk_entry_set_placeholder_text(GTK_ENTRY(port_entry), "Port#");
+	gtk_box_pack_end(GTK_BOX(entry_box), port_entry, FALSE, FALSE, 0);
 	
 	button_box = gtk_button_box_new(GTK_ORIENTATION_HORIZONTAL);
 	gtk_container_add(GTK_CONTAINER(widget_box), button_box);
@@ -157,7 +169,7 @@ void PC_GuiHandler::hostButtonPressed(GtkWidget *widget, gpointer data)
 	if(!entry_text_is_valid(name_text) || strlen(name_text) < 1)
 	{
 		username_popup();
-	}	
+	}
 
 	else
 	{
@@ -238,6 +250,18 @@ gchar* PC_GuiHandler::get_child_entry_text(GtkWidget *container, const gchar *en
 	{
 		entry_text = const_cast<gchar*>(gtk_entry_get_text(GTK_ENTRY(entry_widget)));
 	}
+	else
+	{
+		GtkWidget *entry_box = get_widget_by_name(container, "EntryBox");
+		if(entry_box != NULL)
+		{
+			entry_widget = get_widget_by_name(entry_box, entry_name);
+			if(entry_widget != NULL)
+			{
+				entry_text = const_cast<gchar*>(gtk_entry_get_text(GTK_ENTRY(entry_widget)));
+			}
+		}
+	}
 	
 	return entry_text;
 }
@@ -267,6 +291,17 @@ gchar* PC_GuiHandler::get_user_link()
 {
 	return user_link;
 }
+
+void PC_GuiHandler::set_user_port(gchar *entry_text)
+{
+	user_port = entry_text;
+}
+
+gchar* PC_GuiHandler::get_user_port()
+{
+	return user_port;
+}
+
 
 // Private Utility Functions
 

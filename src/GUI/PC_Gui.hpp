@@ -119,6 +119,7 @@ private:
 	
 	gchar *user_name;
 	gchar *user_link;
+	gchar *user_port;
 	
 	bool is_host;
 	
@@ -152,7 +153,8 @@ public:
 	gchar* get_user_name();
 	void set_user_link(gchar *entry_text);
 	gchar* get_user_link();
-	
+	void set_user_port(gchar *entry_text);
+	gchar* get_user_port();
 	
 // Utility Functions
 private:
