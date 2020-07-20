@@ -12,7 +12,12 @@ PC_GuiHandler::PC_GuiHandler()
 	user_link = NULL;	
 	is_host = FALSE;
 
-	app = gtk_application_new("edu.ucsc.PeersChat", G_APPLICATION_FLAGS_NONE);
+	// Generate Unique Name by appending unix time in ms
+	char name[100];
+	sprintf(name, "edu.ucsc.PeersChat%" PRIu64, (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())).count());
+
+	// Create GTK Application
+	app = gtk_application_new(name, G_APPLICATION_FLAGS_NONE);
 	g_signal_connect(app, "activate", G_CALLBACK(activate_callback), this);
 }
 

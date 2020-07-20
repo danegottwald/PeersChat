@@ -13,6 +13,8 @@
 #include <PC_Audio.hpp>
 #include <PC_Network.hpp>
 #include <GuiCallbacks.hpp>
+#include <chrono>
+#include <cinttypes>
 
 // Pre-Compiler Constants
 #define DEFAULT_WINDOW_WIDTH 360
