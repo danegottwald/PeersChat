@@ -84,12 +84,24 @@ void join_button_callback(GtkWidget *widget, gpointer data)
 	}
 }
 
-void mute_button_callback(GtkWidget *widget, gpointer data)
+void mute_button_callback(GtkWidget *widget)
 {
 	GtkWidget* list_row = gtk_widget_get_parent(widget);
 	const gchar* name = gtk_widget_get_name(list_row);
+	const std::string nameStr = name;
+	NPeer* mute_peer = (*Network)[nameStr];
 	
-	g_print("Mute Button Pressed\n");
+	gboolean toggled = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
+	if(toggled)
+	{
+		g_print("Mute Button Toggled\n");
+		// Call mute on mute_peer
+	}
+	else
+	{
+		g_print("Mute Button Untoggled\n");
+		// Call unmute on mute_peer
+	}
 	g_print("Name of user: %s\n", name); 
 }
 
