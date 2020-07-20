@@ -145,10 +145,12 @@ public:
 	gchar *get_child_entry_text(GtkWidget *container, const gchar *entry_name);
 	GtkWidget* get_widget_box();
 	
-	void set_user_name(gchar *entry_text);
+	void set_user_name(gchar *entry_text, size_t pos);
 	gchar* get_user_name();
 	void set_user_link(gchar *entry_text);
 	gchar* get_user_link();
+
+	std::map<gchar*, size_t> users;
 	
 // Utility Functions
 private:

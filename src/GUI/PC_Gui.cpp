@@ -134,7 +134,7 @@ void PC_GuiHandler::hostButtonPressed(GtkWidget *widget, gpointer data)
 
 	else
 	{
-		set_user_name(name_text);
+		set_user_name(name_text, users.size());
 		
 		is_host = TRUE;
 		
@@ -157,7 +157,7 @@ void PC_GuiHandler::joinButtonPressed(GtkWidget *widget, gpointer data)
 	}	
 	else
 	{
-		set_user_name(name_text);
+		set_user_name(name_text, users.size());
 		set_user_link(link_text);
 	
 		is_host = FALSE;
@@ -169,7 +169,7 @@ void PC_GuiHandler::joinButtonPressed(GtkWidget *widget, gpointer data)
 
 void PC_GuiHandler::outputVolChanged(GtkVolumeButton *v1, gdouble value, gpointer data)
 {
-	//g_print("Value = %f\n", value);
+	Audio->setOutputVolume(value);
 }
 
 void PC_GuiHandler::leaveButtonPressed(GtkWidget *widget, gpointer data)
@@ -221,9 +221,10 @@ GtkWidget* PC_GuiHandler::get_widget_box()
 	return widget_box;
 }
 
-void PC_GuiHandler::set_user_name(gchar *entry_text)
+void PC_GuiHandler::set_user_name(gchar *entry_text, size_t pos)
 {
 	user_name = entry_text;
+	users.insert({user_name, pos});
 }
 
 gchar* PC_GuiHandler::get_user_name()
