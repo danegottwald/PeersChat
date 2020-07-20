@@ -410,7 +410,7 @@ private:
 	std::mutex peers_lock;
 	int size = 0;
 	int tcp_listen = -1;
-	bool accept_direct_join = false;
+	bool accept_direct_join = true;
 	bool accept_indirect_join = true;
 	bool running = false;
 	std::unique_ptr<std::thread> listen_thread;
