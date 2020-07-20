@@ -70,7 +70,7 @@ void PC_GuiHandler::remove_name_from_session(const gchar *name)
 
 // GTK+ Callback functions bound to GtkObjects
 
-void PC_GuiHandler::activate(GtkApplication *app, gpointer data)
+void PC_GuiHandler::activate(GtkApplication *app)
 {
 	GtkWidget *window;
 	GtkWidget *peerschat_label;
@@ -120,6 +120,8 @@ void PC_GuiHandler::activate(GtkApplication *app, gpointer data)
 
 void PC_GuiHandler::hostButtonPressed(GtkWidget *widget, gpointer data)
 {	
+	g_return_if_fail(GTK_IS_BUTTON(widget));
+
 	gchar *name_text;
 	name_text = get_user_name();
 	
@@ -141,6 +143,8 @@ void PC_GuiHandler::hostButtonPressed(GtkWidget *widget, gpointer data)
 
 void PC_GuiHandler::joinButtonPressed(GtkWidget *widget, gpointer data)
 {
+	g_return_if_fail(GTK_IS_BUTTON(widget));
+	
 	gchar *name_text;
 	gchar *link_text;
 
@@ -163,13 +167,10 @@ void PC_GuiHandler::joinButtonPressed(GtkWidget *widget, gpointer data)
 	}
 }
 
-void PC_GuiHandler::outputVolChanged(GtkVolumeButton *v1, gdouble value, gpointer data)
-{
-	//g_print("Value = %f\n", value);
-}
-
 void PC_GuiHandler::leaveButtonPressed(GtkWidget *widget, gpointer data)
 {
+	g_return_if_fail(GTK_IS_BUTTON(widget));
+	
 	GtkWidget *lobby_box = get_widget_by_name(GTK_WIDGET(data), "LobbyBox");
 	gtk_widget_destroy(lobby_box);
 	gtk_widget_show_all(GTK_WIDGET(data));
