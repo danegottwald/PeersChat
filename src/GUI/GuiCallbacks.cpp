@@ -24,7 +24,9 @@ void host_button_callback(GtkWidget *widget, gpointer data)
 	name_text = gh->get_child_entry_text(widget_box, "NameEntry");
 	port_text = gh->get_child_entry_text(widget_box, "LinkEntry");
 	gh->set_user_name(name_text);
-	PORT = (uint16_t) atoi(port_text);
+	uint16_t port = (uint16_t) atoi(port_text);
+	if(port > 0)
+		PORT = port;
 
 
 	// host network
