@@ -1116,8 +1116,10 @@ void PeersChatNetwork::listen_on_tcp_thread()
 		// Accept connection
 		if((peer = accept(tcp_listen, (sockaddr*) &addr, (socklen_t*) sizeof(addr))) < 0)
 		{
-			if(errno != EAGAIN)
-				perror("PeersChatNetwork::listen_on_tcp_thread() accept");
+			if(errno == EAGAIN) continue;
+			perror("PeersChatNetwork::listen_on_tcp_thread() accept");
+			inet_ntop(AF_INET, &addr.sin_addr, (char*)buffer, INET_ADDRSTRLEN+10);
+			fprintf(stderr, "PeersChatNetwork::listen_on_tcp_thread() ADDRESS recv'd is %s:%" PRIu16 "\n", buffer, ntohs(addr.sin_port));
 			continue;
 		}
 
