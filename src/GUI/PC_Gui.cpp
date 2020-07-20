@@ -392,6 +392,17 @@ void PC_GuiHandler::setup_lobby(GtkWidget *parent, GtkWidget *lobby_box)
 	GtkWidget *outputLabel = gtk_label_new((const gchar*) "Output Volume");
 	gtk_box_pack_end(GTK_BOX(outputBox), outputLabel, FALSE, FALSE, 0);
 	
+	GtkWidget *indirectBox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, DEFAULT_WIDGET_PADDING);
+	gtk_widget_set_vexpand(indirectBox, TRUE);
+	gtk_box_pack_end(GTK_BOX(lobby_box), indirectBox, FALSE, FALSE, 0);
+	
+	GtkWidget *indirectCheck = gtk_check_button_new();
+	gtk_box_pack_end(GTK_BOX(indirectBox), indirectCheck, TRUE, FALSE, 0);
+	g_signal_connect(indirectCheck, "clicked", G_CALLBACK(indirect_checkmark_callback), this);
+	
+	GtkWidget *indirectLabel = gtk_label_new((const gchar*) "Allow Indirect Joins");
+	gtk_box_pack_end(GTK_BOX(indirectBox), indirectLabel, FALSE, FALSE, 0);
+	
 	if(is_host) 
 	{
 		add_host_to_session(user_name);

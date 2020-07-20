@@ -26,7 +26,7 @@ void host_button_callback(GtkWidget *widget, gpointer data)
 	gh->set_user_name(name_text, gh->users.size());
 	gh->set_user_port(port_text);
 	PORT = (uint16_t) atoi(port_text);
-	
+	gh->hostButtonPressed(widget, widget_box);
 	// host network
 	if (Network->host() != TRUE)
 	{
@@ -112,6 +112,19 @@ void kick_button_callback(GtkWidget *widget, gpointer data)
 	g_print("Name of user: %s\n", name);
 	
 	gh->remove_name_from_session(name);
+}
+
+void indirect_checkmark_callback(GtkWidget *widget)
+{
+	gboolean toggled = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
+	if(toggled)
+	{
+		g_print("Indirect Joins Toggled\n");
+	}
+	else
+	{
+		g_print("Indirect Joins Untoggled\n");
+	}
 }
 
 void volume_callback(GtkVolumeButton *v1, gdouble value)
