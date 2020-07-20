@@ -18,7 +18,7 @@ void host_button_callback(GtkWidget *widget, gpointer data);
 void join_button_callback(GtkWidget *widget, gpointer data); 
 void mute_button_callback(GtkWidget *widget);
 void kick_button_callback(GtkWidget *widget, gpointer data);
-void volume_callback(GtkVolumeButton *v1, gdouble value, gpointer data);
+void volume_callback(GtkVolumeButton *v1, gdouble value);
 void leave_button_callback(GtkWidget *widget, gpointer data);
 
 #endif 
