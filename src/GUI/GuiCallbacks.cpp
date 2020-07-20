@@ -25,8 +25,6 @@ void host_button_callback(GtkWidget *widget, gpointer data)
 	port_text = gh->get_child_entry_text(widget_box, "LinkEntry");
 	gh->set_user_name(name_text);
 	PORT = (uint16_t) atoi(port_text);
-	
-	gh->hostButtonPressed(widget, widget_box);
 
 
 	// host network
@@ -38,6 +36,7 @@ void host_button_callback(GtkWidget *widget, gpointer data)
 	else
 	{
 		// start audio library
+		gh->hostButtonPressed(widget, widget_box);
 		Audio->startVoiceStream();
 	}
 }
@@ -53,8 +52,6 @@ void join_button_callback(GtkWidget *widget, gpointer data)
 	link_text = gh->get_child_entry_text(widget_box, "LinkEntry");
 	gh->set_user_name(name_text);
 	gh->set_user_link(link_text);
-	
-	gh->joinButtonPressed(widget, widget_box);
 
 
 	// parse link_text for IP address and port
@@ -80,16 +77,29 @@ void join_button_callback(GtkWidget *widget, gpointer data)
 	else
 	{
 		// start audio library
+		gh->joinButtonPressed(widget, widget_box);
 		Audio->startVoiceStream();
 	}
 }
 
-void mute_button_callback(GtkWidget *widget, gpointer data)
+void mute_button_callback(GtkWidget *widget)
 {
 	GtkWidget* list_row = gtk_widget_get_parent(widget);
 	const gchar* name = gtk_widget_get_name(list_row);
+	const std::string nameStr = name;
+	NPeer* mute_peer = (*Network)[nameStr];
 	
-	g_print("Mute Button Pressed\n");
+	gboolean toggled = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
+	if(toggled)
+	{
+		g_print("Mute Button Toggled\n");
+		// Call mute on mute_peer
+	}
+	else
+	{
+		g_print("Mute Button Untoggled\n");
+		// Call unmute on mute_peer
+	}
 	g_print("Name of user: %s\n", name); 
 }
 

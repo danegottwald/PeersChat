@@ -16,7 +16,7 @@ extern APeer *Audio;
 void activate_callback(GtkApplication *app, gpointer data);
 void host_button_callback(GtkWidget *widget, gpointer data); 
 void join_button_callback(GtkWidget *widget, gpointer data); 
-void mute_button_callback(GtkWidget *widget, gpointer data);
+void mute_button_callback(GtkWidget *widget);
 void kick_button_callback(GtkWidget *widget, gpointer data);
 void volume_callback(GtkVolumeButton *v1, gdouble value, gpointer data);
 void leave_button_callback(GtkWidget *widget, gpointer data);
