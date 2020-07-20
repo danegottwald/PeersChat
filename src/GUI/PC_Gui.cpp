@@ -98,7 +98,7 @@ void PC_GuiHandler::activate(GtkApplication *app, gpointer data)
 	
 	link_entry = gtk_entry_new();
 	gtk_widget_set_name(link_entry, "LinkEntry");
-	gtk_entry_set_placeholder_text(GTK_ENTRY(link_entry), "If Joining Session: Enter Link");
+	gtk_entry_set_placeholder_text(GTK_ENTRY(link_entry), "Host = port (8080);  User = IP:port");
 	gtk_container_add(GTK_CONTAINER(widget_box), link_entry);
 	
 	button_box = gtk_button_box_new(GTK_ORIENTATION_HORIZONTAL);
@@ -329,12 +329,12 @@ void PC_GuiHandler::setup_lobby(GtkWidget *parent, GtkWidget *lobby_box)
 	if(is_host) 
 	{
 		add_host_to_session(user_name);
-		add_user_to_session("TestUser", TRUE);
+		//add_user_to_session("TestUser", TRUE);
 	}
 	else
 	{
 		add_user_to_session(user_name, FALSE);
-		add_host_to_session("TestHost");
+		//add_host_to_session("TestHost");
 	}
 	gtk_widget_show_all(lobby_box);
 }
