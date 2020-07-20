@@ -10,9 +10,11 @@
 #include <gtk/gtk.h> // Using GTK+ 3.0: https://developer.gnome.org/gtk3/stable/
 #include <regex>
 #include <cstring>
+#include <PC_Audio.hpp>
 #include <PC_Network.hpp>
 
 extern PeersChatNetwork *Network;
+extern APeer *Audio;
 
 // Pre-Compiler Constants
 #define DEFAULT_WINDOW_WIDTH 360
