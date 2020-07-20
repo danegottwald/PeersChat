@@ -337,6 +337,17 @@ bool NPeer::create_udp_socket() noexcept
 		return false;
 	}
 
+	// Create Timeval based on Timeout
+	timeval timeout;
+	std::chrono::seconds     sec = (std::chrono::duration_cast<seconds>(SOCKET_TIMEOUT));
+	std::chrono::microseconds us = (std::chrono::duration_cast<microseconds>(SOCKET_TIMEOUT)) - sec;
+	timeout.tv_sec  = sec.count();
+	timeout.tv_usec =  us.count();
+
+	// Set Timeout
+	if(setsockopt(udp, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0)
+		return false;
+
 
 	// Bind UDP
 	sockaddr_in addr;
