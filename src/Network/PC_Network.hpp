@@ -115,16 +115,27 @@ static inline int close(int &x) { return closesocket(x); }
 
 
 // Globals
-	// Delay to give packets time to catch up and sort
+/*
+ * PACKET_DELAY adds artificial latency to allow out of order packets to catch up and
+ * reorder.  Make this too little and you'll miss packets.  Make it too big and you'll
+ * add too much latency.
+ *
+ * SOCKET_TIMEOUT adds a cap to sockets so that they don't waste time on dead peers.
+ * Make this too short and you might now give your peers enough time to respond.  Make
+ * this too long and the program will take longer to close and dead connections will
+ * stick around longer.
+ *
+ * PEER_TIMEOUT is a duration of time that if you haven't received audio from a peer
+ * for this long, then the peer will be disconnected.
+ *
+ * PORT is the port that this program will be using
+ *
+*/
 extern std::chrono::milliseconds PACKET_DELAY;
-	// Time to give threads time to end before forcing them to
-extern std::chrono::milliseconds PEERS_CHAT_DESTRUCT_TIMEOUT;
-	// How long it takes for a send/recv to timeout
 extern std::chrono::milliseconds SOCKET_TIMEOUT;
-	// Time to give PEER to send you audio before they timeout
 extern std::chrono::milliseconds PEER_TIMEOUT;
-	// Port Number to handle UDP/TCP
 extern uint16_t PORT;
+
 
 
 
@@ -314,6 +325,7 @@ class NPeerAttorney
 		return peer->getDest();
 	}
 	static inline int getUDP() { return NPeer::udp; }
+	static inline void destroyUDP() { close(NPeer::udp); NPeer::udp = -1; }
 	static inline int getTCP(NPeer *peer) { return peer->tcp; }
 	friend class PeersChatNetwork;
 };

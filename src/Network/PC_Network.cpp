@@ -335,6 +335,7 @@ bool NPeer::create_udp_socket() noexcept
 		return false;
 	}
 
+
 	// Bind UDP
 	sockaddr_in addr;
 	addr.sin_family = AF_INET;
@@ -440,14 +441,14 @@ bool NPeer::createTCP()
 	if((this->tcp = socket(AF_INET, SOCK_STREAM, 0)) < 0)
 		return false;
 
-	if(connect(this->tcp, (sockaddr*) &destination, sizeof(this->destination)) < 0)
-	{
-		destroyTCP();
-		return false;
-	}
+	// Create Timeval based on Timeout
+	timeval timeout;
+	std::chrono::seconds     sec = (std::chrono::duration_cast<seconds>(SOCKET_TIMEOUT));
+	std::chrono::microseconds us = (std::chrono::duration_cast<microseconds>(SOCKET_TIMEOUT)) - sec;
+	timeout.tv_sec  = sec.count();
+	timeout.tv_usec =  us.count();
 
 	// Set Timeout
-	int64_t timeout = (std::chrono::duration_cast<milliseconds>(SOCKET_TIMEOUT)).count();
 	if(setsockopt(this->tcp, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)) < 0)
 	{
 		destroyTCP();
@@ -458,6 +459,14 @@ bool NPeer::createTCP()
 		destroyTCP();
 		return false;
 	}
+
+	// Connect to Peer
+	if(connect(this->tcp, (sockaddr*) &destination, sizeof(this->destination)) < 0)
+	{
+		destroyTCP();
+		return false;
+	}
+
 
 	return true;
 }
@@ -565,6 +574,10 @@ bool PeersChatNetwork::setMyName(const std::string &name) noexcept
 // Public Functions
 bool PeersChatNetwork::join(const sockaddr_in &addr) noexcept
 {
+	#ifdef NET_DEBUG
+	std::cout << "Call to PeersChatNetwork::join" << std::endl;
+	#endif
+
 	// Make sure everything is stopped first
 	if(running) return false;
 	this->stop();
@@ -573,12 +586,13 @@ bool PeersChatNetwork::join(const sockaddr_in &addr) noexcept
 	// Create NPeer
 	addPeer(addr);
 	NPeer *peer = (*this)[addr];
+	if(!peer) return false;
 
 	// Create TCP Connection to Peer
 	if(!NPeerAttorney::createTCP(peer))
 	{
-		return false;
 		this->stop();
+		return false;
 	}
 
 	// Get TCP socket
@@ -603,6 +617,10 @@ bool PeersChatNetwork::join(const sockaddr_in &addr) noexcept
 	// Close Out TCP Connection
 	NPeerAttorney::destroyTCP(peer);
 
+
+	#ifdef NET_DEBUG
+	std::cout << "Call to PeersChatNetwork::join completed" << std::endl;
+	#endif
 
 	// Start or fail sucessfully
 	if(this->start())
@@ -638,6 +656,10 @@ bool PeersChatNetwork::host() noexcept
 
 void PeersChatNetwork::disconnect() noexcept
 {
+	#ifdef NET_DEBUG
+	std::cout << "Call to PeersChatNetwork::disconnect()" << std::endl;
+	#endif
+
 	{
 		std::lock_guard<std::mutex> lock(this->peers_lock);
 
@@ -657,6 +679,10 @@ void PeersChatNetwork::disconnect() noexcept
 
 	// End it All
 	this->stop();
+
+	#ifdef NET_DEBUG
+	std::cout << "Call to PeersChatNetwork::disconnect() completed" << std::endl;
+	#endif
 }
 
 
@@ -686,7 +712,6 @@ bool PeersChatNetwork::start() noexcept
 	timeout.tv_usec =  us.count();
 
 	// Set Timeout
-	std::cout << "SETTING TIMEOUT " << std::endl; //TODO
 	if(setsockopt(tcp_listen, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)) < 0)
 	{
 		perror("PeersChatNetwork::start() Failed to set send timeout");
@@ -701,7 +726,6 @@ bool PeersChatNetwork::start() noexcept
 	}
 
 	// Sock Bind
-	std::cout << "BINDING SOCKET " << std::endl; //TODO
 	sockaddr_in addr;
 	addr.sin_family = AF_INET;
 	addr.sin_addr.s_addr = INADDR_ANY;
@@ -714,7 +738,6 @@ bool PeersChatNetwork::start() noexcept
 	}
 
 	// Sock Listen
-	std::cout << "LISTENING SOCKET " <<std::endl; //TODO
 	if(listen(tcp_listen, MAX_PEERS + 1) < 0)
 	{
 		perror("PeersChatNetwork::start() listen()");
@@ -723,7 +746,6 @@ bool PeersChatNetwork::start() noexcept
 	}
 
 
-	std::cout << "STARTING BACKGROUND THREADS " << std::endl; //TODO
 	// Run Background threads
 	running = true;
 	listen_thread.reset(new std::thread(&PeersChatNetwork::listen_on_tcp_thread, this));
@@ -744,18 +766,27 @@ void PeersChatNetwork::stop() noexcept
 	#ifdef NET_DEBUG
 	std::cout << "Call to PeersChatNetwork::stop()" << std::endl;
 	#endif
+
 	std::lock_guard<std::mutex> lock(peers_lock);
 	running = false;
 
 	this->peers.clear();
+	this->size = 0;
 
-	if((recv_thread.get() && recv_thread->joinable()) || (listen_thread.get() && listen_thread->joinable()))
-		std::this_thread::sleep_for(PEERS_CHAT_DESTRUCT_TIMEOUT);
-	recv_thread.reset();
-	listen_thread.reset();
+	NPeerAttorney::destroyUDP();
+
+	if((recv_thread.get() && recv_thread->joinable()))
+		recv_thread->join();
+
+	if(listen_thread.get() && listen_thread->joinable())
+		listen_thread->join();
 
 	if(tcp_listen > 0) close(tcp_listen);
 	tcp_listen = -1;
+
+	recv_thread.reset();
+	listen_thread.reset();
+
 	#ifdef NET_DEBUG
 	std::cout << "Call to PeersChatNetwork::stop() completed" << std::endl;
 	#endif
