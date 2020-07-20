@@ -12,6 +12,7 @@
 #include <cstring>
 #include <PC_Audio.hpp>
 #include <PC_Network.hpp>
+#include <GuiCallbacks.hpp>
 
 // Pre-Compiler Constants
 #define DEFAULT_WINDOW_WIDTH 360
