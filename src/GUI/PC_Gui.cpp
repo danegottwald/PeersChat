@@ -73,6 +73,30 @@ void PC_GuiHandler::remove_name_from_session(const gchar *name)
 	}
 }
 
+void PC_GuiHandler::refresh_name_list()
+{
+	GList *list_rows = gtk_container_get_children(GTK_CONTAINER(name_list));
+	while(list_rows != NULL)
+	{
+		gtk_widget_destroy(GTK_WIDGET(list_rows->data));
+		list_rows = list_rows->next;
+	}
+
+	int numPeers = Network->getNumberPeers();
+	for(int peer_index = 0; peer_index < numPeers; peer_index++)
+	{
+		NPeer *current_peer = (*Network)[peer_index];
+		if(current_peer == NULL) {
+			continue;
+		}
+		//int current_id = current_peer->getID();
+		// Use map to get peer_name from ID
+		
+		// add_user_to_session(peer_name, FALSE);
+	}
+}
+
+
 // GTK+ Callback functions bound to GtkObjects
 
 void PC_GuiHandler::activate(GtkApplication *app)

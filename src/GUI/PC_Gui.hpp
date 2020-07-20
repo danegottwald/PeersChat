@@ -122,17 +122,21 @@ private:
 	
 	bool is_host;
 	
+public:
+	std::map<gchar*, size_t> users;
+	
 // Constructor, destructor, and initializer
 public:
 	PC_GuiHandler();
 	~PC_GuiHandler();
 	int runGui(int argc, char *argv[]);
 
-// Public functions for adding users to session 
+// Public functions for managing user session GUI
 	void add_host_to_session(const gchar *name);
 	void add_user_to_session(const gchar *name, bool kickable);
 	void remove_name_from_session(const gchar *name);
-
+	void refresh_name_list();
+	
 // Callback Functions
 	void activate(GtkApplication *app);
 	void hostButtonPressed(GtkWidget *widget, gpointer data);
@@ -148,8 +152,7 @@ public:
 	gchar* get_user_name();
 	void set_user_link(gchar *entry_text);
 	gchar* get_user_link();
-
-	std::map<gchar*, size_t> users;
+	
 	
 // Utility Functions
 private:
