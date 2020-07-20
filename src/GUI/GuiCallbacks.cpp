@@ -1,4 +1,4 @@
-#include <PC_Gui.hpp>
+#include <GuiCallbacks.hpp>
 #include <string>
 
 /*
@@ -29,7 +29,7 @@ void host_button_callback(GtkWidget *widget, gpointer data)
 	// host network
 	if (Network->host() != TRUE)
 	{
-		// throw error
+		printf("ERROR: Connection could not be established\n");
 	}
 
 	else
@@ -65,13 +65,13 @@ void join_button_callback(GtkWidget *widget, gpointer data)
 	sockaddr_in addr; 
 	if (inet_pton(AF_INET, ip.c_str(), &addr.sin_addr) < 1)
 	{
-		// throw error
+		printf("ERROR: IP Address String is not a valid IPv4 Address.\n");
 	}
 	addr.sin_port = htons((uint16_t) atoi(port.c_str()));	
 
 	if (Network->join(addr) != TRUE)
 	{
-		// signal error joining call
+		printf("ERROR: Connection could not be established\n");
 	}
 
 	else
