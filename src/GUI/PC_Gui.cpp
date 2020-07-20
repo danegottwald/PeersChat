@@ -1,5 +1,4 @@
 #include <PC_Gui.hpp>
-#include <GuiCallbacks.cpp>
 #include <string.h>
 
 
@@ -134,7 +133,7 @@ void PC_GuiHandler::activate(GtkApplication *app)
 	
 	link_entry = gtk_entry_new();
 	gtk_widget_set_name(link_entry, "LinkEntry");
-	gtk_entry_set_placeholder_text(GTK_ENTRY(link_entry), "Enter IP for Joining");
+	gtk_entry_set_placeholder_text(GTK_ENTRY(link_entry), "Enter (IP:HostPort) for Joining");
 	gtk_box_pack_start(GTK_BOX(entry_box), link_entry, TRUE, TRUE, 0);
 	
 	port_entry = gtk_entry_new();
@@ -173,7 +172,7 @@ void PC_GuiHandler::hostButtonPressed(GtkWidget *widget, gpointer data)
 
 	else
 	{
-		set_user_name(name_text, users.size());
+		//set_user_name(name_text, users.size());
 		
 		is_host = TRUE;
 		
@@ -198,7 +197,7 @@ void PC_GuiHandler::joinButtonPressed(GtkWidget *widget, gpointer data)
 	}	
 	else
 	{
-		set_user_name(name_text, users.size());
+		//set_user_name(name_text, users.size());
 		set_user_link(link_text);
 	
 		is_host = FALSE;
@@ -379,7 +378,6 @@ void PC_GuiHandler::setup_lobby(GtkWidget *parent, GtkWidget *lobby_box)
 	gtk_box_pack_end(GTK_BOX(lobby_box), leave_button, FALSE, FALSE, 0);
 	g_signal_connect(leave_button, "clicked", G_CALLBACK(leave_button_callback), this);
 
-	// new box with output label and slider
 	GtkWidget *outputBox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, DEFAULT_WIDGET_PADDING);
 	gtk_widget_set_name(outputBox, "outputBox");
 	gtk_widget_set_vexpand(outputBox, TRUE);
