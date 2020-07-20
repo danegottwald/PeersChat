@@ -15,6 +15,7 @@ class PeersChat
 
 PeersChatNetwork *Network = NULL;
 APeer *Audio = NULL;
+
 int main(const int argc, char *argv[])
 {	
 	// Create PeersChat Object

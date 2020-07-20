@@ -1,5 +1,6 @@
+#include <PC_Gui.hpp>
 #include "GuiCallbacks.cpp"
-#include "PC_Gui.hpp"
+#include <string.h>
 
 
 // Constructor
@@ -123,10 +124,11 @@ void PC_GuiHandler::hostButtonPressed(GtkWidget *widget, gpointer data)
 	gchar *name_text;
 	name_text = get_user_name();
 	
-	if(!entry_text_is_valid(name_text))
+	if(!entry_text_is_valid(name_text) || strlen(name_text) < 1)
 	{
 		username_popup();
 	}	
+
 	else
 	{
 		set_user_name(name_text);
@@ -146,7 +148,7 @@ void PC_GuiHandler::joinButtonPressed(GtkWidget *widget, gpointer data)
 	name_text = get_user_name();
 	link_text = get_user_link();
 	
-	if(!entry_text_is_valid(name_text))
+	if(!entry_text_is_valid(name_text) || strlen(name_text) < 1)
 	{
 		username_popup();
 	}	
@@ -164,7 +166,7 @@ void PC_GuiHandler::joinButtonPressed(GtkWidget *widget, gpointer data)
 
 void PC_GuiHandler::outputVolChanged(GtkVolumeButton *v1, gdouble value, gpointer data)
 {
-	g_print("Value = %f\n", value);
+	//g_print("Value = %f\n", value);
 }
 
 void PC_GuiHandler::leaveButtonPressed(GtkWidget *widget, gpointer data)
@@ -352,7 +354,7 @@ void PC_GuiHandler::show_error_popup(const gchar *message)
 void PC_GuiHandler::username_popup() 
 {
 	show_error_popup(
-	"Error: Username restricted to (<= 18) alphanumeric characters.\n [A-Z], [a-z], [0-9], [_]" 
+	"Error: Username restricted to (1-18) alphanumeric characters.\n [A-Z], [a-z], [0-9], [_]" 
 	);
 }
 
