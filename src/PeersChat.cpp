@@ -7,7 +7,6 @@
 class PeersChat
 {
 	public:
-		NPeer peer;
 		PeersChatNetwork network;
 		APeer audio;
 		PC_GuiHandler GUI;
@@ -15,6 +14,8 @@ class PeersChat
 };
 
 PeersChatNetwork *Network = NULL;
+APeer *Audio = NULL;
+
 int main(const int argc, char *argv[])
 {	
 	// Create PeersChat Object
@@ -22,6 +23,7 @@ int main(const int argc, char *argv[])
 
 	// Make Network accessible globaly
 	Network = &(pchat->network);
+	Audio = &(pchat->audio);
 
 	if(argc > 1)
 	{
@@ -38,7 +40,7 @@ int main(const int argc, char *argv[])
 //					pchat->network.join(optarg);
 					break;
 				case 'u': // enter a username
-					pchat->peer.setName(optarg);
+					pchat->network.setMyName(optarg);
 					break;
 				default:
 					return EXIT_FAILURE;
