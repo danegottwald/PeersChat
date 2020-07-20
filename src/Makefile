@@ -1,6 +1,6 @@
 CC= gcc
 INCLUDE= -I Network -I Audio -I GUI
-CFLAGS= -std=c++14 -Wall -Wextra -pedantic -Wpedantic -O2 $(INCLUDE)
+CFLAGS= -std=c++14 -Wall -Wextra -pedantic -Wpedantic -O3 $(INCLUDE)
 LFLAGS= -lstdc++ $$(pkg-config --libs portaudio-2.0 opus gtk+-3.0)
 TARGET= PeersChat
 
