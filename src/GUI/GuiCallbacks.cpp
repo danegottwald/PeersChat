@@ -1,4 +1,4 @@
-#include "PC_Gui.hpp"
+#include <PC_Gui.hpp>
 #include <string>
 
 /*
@@ -35,6 +35,7 @@ void host_button_callback(GtkWidget *widget, gpointer data)
 	else
 	{
 		// start audio library
+		Audio->startVoiceStream();
 	}
 }
 
@@ -76,6 +77,7 @@ void join_button_callback(GtkWidget *widget, gpointer data)
 	else
 	{
 		// start audio library
+		Audio->startVoiceStream();
 	}
 }
 
@@ -115,6 +117,7 @@ void leave_button_callback(GtkWidget *widget, gpointer data)
 
 	
 	// disconnect from network
+	Audio->stopVoiceStream();
 	Network->disconnect();
 }
 
