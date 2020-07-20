@@ -74,8 +74,8 @@ void join_button_callback(GtkWidget *widget, gpointer data)
 	else
 	{
 		// start audio library
-		gh->joinButtonPressed(widget, widget_box);
 		Audio->startVoiceStream();
+		gh->joinButtonPressed(widget, widget_box);
 	}
 }
 
