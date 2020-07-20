@@ -122,12 +122,14 @@ struct TCPServerCreateFail : std::exception {
  */
 // Static Initialization
 int NPeer::udp = -1;
+int NPeer::id_counter = 1;
 
 
 // Constructor
 NPeer::NPeer() noexcept : in_packets(AudioInPacket_greater)
 {
 	this->pname[0] = 0;
+	this->ID = NPeer::id_counter++;
 	std::memset((void*)&(this->destination), 0, sizeof(sockaddr_in));
 	destination.sin_family = AF_INET;
 	if(udp < 0)
@@ -183,7 +185,7 @@ bool NPeer::setName(std::string name) noexcept
 			return false;
 	}
 
-	std::strncpy(this->pname, name.c_str(), MAX_NAME_LEN+1);
+	std::strncpy(this->pname, name.c_str(), MAX_NAME_LEN);
 	return true;
 }
 
@@ -533,12 +535,23 @@ NPeer* PeersChatNetwork::operator[](const std::string &x) noexcept
 	NPeer* ret = NULL;
 	std::lock_guard<std::mutex> lock(this->peers_lock);
 	for(int i = 0; i < this->size; ++i)
+	{
 		if(ret && (peers[i]->getName() == x))
 			return NULL;
 		else if(!ret && (peers[i]->getName() == x))
 			ret = peers[i].get();
+	}
 
 	return ret;
+}
+
+NPeer* PeersChatNetwork::findID(const int &x) noexcept
+{
+	std::lock_guard<std::mutex> lock(this->peers_lock);
+	for(int i = 0; i < this->size; ++i)
+		if(this->peers[i]->getID() == x)
+			return this->peers[i].get();
+	return NULL;
 }
 
 

@@ -248,10 +248,13 @@ class NPeer
 {
 	// Members
 private:
+		// Network
 	int tcp = -1;
 	static int udp;
 	sockaddr_in destination;
+		// Identification
 	char pname[MAX_NAME_LEN+1];
+	int ID;
 		// Audio Incoming
 	std::priority_queue<std::unique_ptr<AudioInPacket>,
 	                    std::vector<std::unique_ptr<AudioInPacket>>,
@@ -276,9 +279,10 @@ public:
 	NPeer(const sockaddr_in &addr) noexcept;
 	~NPeer() noexcept;
 
-	// Name
+	// Name/ID
 	std::string getName() noexcept;
 	bool setName(std::string name) noexcept;
+	inline int getID() noexcept { return this->ID; }
 
 
 	// Sending Audio -- All the functions you need to send audio
@@ -309,6 +313,8 @@ private:
 	bool createTCP();
 	void destroyTCP();
 	inline sockaddr_in getDest() { return destination; }
+
+	static int id_counter;
 	friend class NPeerAttorney;
 };
 
@@ -418,6 +424,8 @@ public:
 	NPeer* operator[](const sockaddr_in &addr) noexcept;
 	NPeer* operator[](const int &x) noexcept;
 	NPeer* operator[](const std::string &x) noexcept;
+
+	NPeer* findID(const int &x) noexcept;
 
 	std::string getMyName() noexcept;
 	bool setMyName(const std::string&) noexcept;
