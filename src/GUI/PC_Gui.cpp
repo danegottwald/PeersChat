@@ -9,7 +9,8 @@ PC_GuiHandler::PC_GuiHandler()
 	name_list = NULL;
 	
 	user_name = NULL;
-	user_link = NULL;	
+	user_link = NULL;
+	user_port = NULL;
 	is_host = FALSE;
 
 	// Generate Unique Name by appending unix time in ms
@@ -72,6 +73,30 @@ void PC_GuiHandler::remove_name_from_session(const gchar *name)
 	}
 }
 
+void PC_GuiHandler::refresh_name_list()
+{
+	GList *list_rows = gtk_container_get_children(GTK_CONTAINER(name_list));
+	while(list_rows != NULL)
+	{
+		gtk_widget_destroy(GTK_WIDGET(list_rows->data));
+		list_rows = list_rows->next;
+	}
+
+	int numPeers = Network->getNumberPeers();
+	for(int peer_index = 0; peer_index < numPeers; peer_index++)
+	{
+		NPeer *current_peer = (*Network)[peer_index];
+		if(current_peer == NULL) {
+			continue;
+		}
+		//int current_id = current_peer->getID();
+		// Use map to get peer_name from ID
+		
+		// add_user_to_session(peer_name, FALSE);
+	}
+}
+
+
 // GTK+ Callback functions bound to GtkObjects
 
 void PC_GuiHandler::activate(GtkApplication *app)
@@ -79,7 +104,9 @@ void PC_GuiHandler::activate(GtkApplication *app)
 	GtkWidget *window;
 	GtkWidget *peerschat_label;
 	GtkWidget *name_entry;
+	GtkWidget *entry_box;
 	GtkWidget *link_entry;
+	GtkWidget *port_entry;
 	GtkWidget *button_box;
 	GtkWidget *host_button;
 	GtkWidget *join_button;
@@ -100,10 +127,19 @@ void PC_GuiHandler::activate(GtkApplication *app)
 	gtk_entry_set_placeholder_text(GTK_ENTRY(name_entry), "Enter Username");
 	gtk_container_add(GTK_CONTAINER(widget_box), name_entry);
 	
+	entry_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+	gtk_widget_set_name(entry_box, "EntryBox");
+	gtk_container_add(GTK_CONTAINER(widget_box), entry_box);
+	
 	link_entry = gtk_entry_new();
 	gtk_widget_set_name(link_entry, "LinkEntry");
-	gtk_entry_set_placeholder_text(GTK_ENTRY(link_entry), "Host = port (8080);  User = IP:port");
-	gtk_container_add(GTK_CONTAINER(widget_box), link_entry);
+	gtk_entry_set_placeholder_text(GTK_ENTRY(link_entry), "Enter IP for Joining");
+	gtk_box_pack_start(GTK_BOX(entry_box), link_entry, TRUE, TRUE, 0);
+	
+	port_entry = gtk_entry_new();
+	gtk_widget_set_name(port_entry, "PortEntry");
+	gtk_entry_set_placeholder_text(GTK_ENTRY(port_entry), "Port#");
+	gtk_box_pack_end(GTK_BOX(entry_box), port_entry, FALSE, FALSE, 0);
 	
 	button_box = gtk_button_box_new(GTK_ORIENTATION_HORIZONTAL);
 	gtk_container_add(GTK_CONTAINER(widget_box), button_box);
@@ -132,7 +168,7 @@ void PC_GuiHandler::hostButtonPressed(GtkWidget *widget, gpointer data)
 	if(!entry_text_is_valid(name_text) || strlen(name_text) < 1)
 	{
 		username_popup();
-	}	
+	}
 
 	else
 	{
@@ -213,6 +249,18 @@ gchar* PC_GuiHandler::get_child_entry_text(GtkWidget *container, const gchar *en
 	{
 		entry_text = const_cast<gchar*>(gtk_entry_get_text(GTK_ENTRY(entry_widget)));
 	}
+	else
+	{
+		GtkWidget *entry_box = get_widget_by_name(container, "EntryBox");
+		if(entry_box != NULL)
+		{
+			entry_widget = get_widget_by_name(entry_box, entry_name);
+			if(entry_widget != NULL)
+			{
+				entry_text = const_cast<gchar*>(gtk_entry_get_text(GTK_ENTRY(entry_widget)));
+			}
+		}
+	}
 	
 	return entry_text;
 }
@@ -242,6 +290,17 @@ gchar* PC_GuiHandler::get_user_link()
 {
 	return user_link;
 }
+
+void PC_GuiHandler::set_user_port(gchar *entry_text)
+{
+	user_port = entry_text;
+}
+
+gchar* PC_GuiHandler::get_user_port()
+{
+	return user_port;
+}
+
 
 // Private Utility Functions
 
@@ -331,6 +390,17 @@ void PC_GuiHandler::setup_lobby(GtkWidget *parent, GtkWidget *lobby_box)
 
 	GtkWidget *outputLabel = gtk_label_new((const gchar*) "Output Volume");
 	gtk_box_pack_end(GTK_BOX(outputBox), outputLabel, FALSE, FALSE, 0);
+	
+	GtkWidget *indirectBox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, DEFAULT_WIDGET_PADDING);
+	gtk_widget_set_vexpand(indirectBox, TRUE);
+	gtk_box_pack_end(GTK_BOX(lobby_box), indirectBox, FALSE, FALSE, 0);
+	
+	GtkWidget *indirectCheck = gtk_check_button_new();
+	gtk_box_pack_end(GTK_BOX(indirectBox), indirectCheck, TRUE, FALSE, 0);
+	g_signal_connect(indirectCheck, "clicked", G_CALLBACK(indirect_checkmark_callback), this);
+	
+	GtkWidget *indirectLabel = gtk_label_new((const gchar*) "Allow Indirect Joins");
+	gtk_box_pack_end(GTK_BOX(indirectBox), indirectLabel, FALSE, FALSE, 0);
 	
 	if(is_host) 
 	{

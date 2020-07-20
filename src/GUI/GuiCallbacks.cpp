@@ -22,12 +22,12 @@ void host_button_callback(GtkWidget *widget, gpointer data)
 	gchar *name_text;
 	gchar *port_text;
 	name_text = gh->get_child_entry_text(widget_box, "NameEntry");
-	port_text = gh->get_child_entry_text(widget_box, "LinkEntry");
+	port_text = gh->get_child_entry_text(widget_box, "PortEntry");
+	gh->set_user_port(port_text);
 	uint16_t port = (uint16_t) atoi(port_text);
 	if(port > 0)
 		PORT = port;
 	gh->set_user_name(name_text, gh->users.size());
-
 
 	// host network
 	if (Network->host() != TRUE)
@@ -50,26 +50,21 @@ void join_button_callback(GtkWidget *widget, gpointer data)
 	
 	gchar *name_text;
 	gchar *link_text;
+	gchar *port_text;
 	name_text = gh->get_child_entry_text(widget_box, "NameEntry");
 	link_text = gh->get_child_entry_text(widget_box, "LinkEntry");
+	port_text = gh->get_child_entry_text(widget_box, "PortEntry");
 	gh->set_user_name(name_text, gh->users.size());
 	gh->set_user_link(link_text);
-
-
-	// parse link_text for IP address and port
-	std::string str(link_text);
-	size_t pos = str.find_first_of(':', 0);
-	std::string ip = str.substr(0, pos);
-	std::string port = str.substr(pos + 1, 10);
-
+	gh->set_user_port(port_text);
 
 	// define socket address and join connection
 	sockaddr_in addr; 
-	if (inet_pton(AF_INET, ip.c_str(), &addr.sin_addr) < 1)
+	if (inet_pton(AF_INET, link_text, &addr.sin_addr) < 1)
 	{
 		printf("ERROR: IP Address String is not a valid IPv4 Address.\n");
 	}
-	addr.sin_port = htons((uint16_t) atoi(port.c_str()));	
+	addr.sin_port = htons((uint16_t) atoi(port_text));	
 
 	if (Network->join(addr) != TRUE)
 	{
@@ -119,6 +114,19 @@ void kick_button_callback(GtkWidget *widget, gpointer data)
 	g_print("Name of user: %s\n", name);
 	
 	gh->remove_name_from_session(name);
+}
+
+void indirect_checkmark_callback(GtkWidget *widget)
+{
+	gboolean toggled = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
+	if(toggled)
+	{
+		g_print("Indirect Joins Toggled\n");
+	}
+	else
+	{
+		g_print("Indirect Joins Untoggled\n");
+	}
 }
 
 void volume_callback(GtkVolumeButton *v1, gdouble value)
