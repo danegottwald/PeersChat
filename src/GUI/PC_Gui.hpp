@@ -134,10 +134,9 @@ public:
 	void remove_name_from_session(const gchar *name);
 
 // Callback Functions
-	void activate(GtkApplication *app, gpointer data);
+	void activate(GtkApplication *app);
 	void hostButtonPressed(GtkWidget *widget, gpointer data);
 	void joinButtonPressed(GtkWidget *widget, gpointer data);
-	void outputVolChanged(GtkVolumeButton *v1, gdouble value, gpointer data);
 	void leaveButtonPressed(GtkWidget *widget, gpointer data);	
 
 // Setters + Getters providing access for GuiCallbacks.cpp
