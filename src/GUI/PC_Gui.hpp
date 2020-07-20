@@ -12,6 +12,9 @@
 #include <cstring>
 #include <PC_Audio.hpp>
 #include <PC_Network.hpp>
+#include <GuiCallbacks.hpp>
+#include <chrono>
+#include <cinttypes>
 
 // Pre-Compiler Constants
 #define DEFAULT_WINDOW_WIDTH 360
@@ -131,9 +134,10 @@ public:
 	void remove_name_from_session(const gchar *name);
 
 // Callback Functions
-	void activate(GtkApplication *app);
+	void activate(GtkApplication *app, gpointer data);
 	void hostButtonPressed(GtkWidget *widget, gpointer data);
 	void joinButtonPressed(GtkWidget *widget, gpointer data);
+	void outputVolChanged(GtkVolumeButton *v1, gdouble value, gpointer data);
 	void leaveButtonPressed(GtkWidget *widget, gpointer data);	
 
 // Setters + Getters providing access for GuiCallbacks.cpp
@@ -141,10 +145,12 @@ public:
 	gchar *get_child_entry_text(GtkWidget *container, const gchar *entry_name);
 	GtkWidget* get_widget_box();
 	
-	void set_user_name(gchar *entry_text);
+	void set_user_name(gchar *entry_text, size_t pos);
 	gchar* get_user_name();
 	void set_user_link(gchar *entry_text);
 	gchar* get_user_link();
+
+	std::map<gchar*, size_t> users;
 	
 // Utility Functions
 private:

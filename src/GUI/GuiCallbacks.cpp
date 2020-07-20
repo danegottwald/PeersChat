@@ -11,7 +11,7 @@
 void activate_callback(GtkApplication *app, gpointer data)
 {
 	PC_GuiHandler* gh = static_cast<PC_GuiHandler*>(data);
-	gh->activate(app);
+	gh->activate(app, NULL);
 }
 
 void host_button_callback(GtkWidget *widget, gpointer data) 
@@ -23,11 +23,10 @@ void host_button_callback(GtkWidget *widget, gpointer data)
 	gchar *port_text;
 	name_text = gh->get_child_entry_text(widget_box, "NameEntry");
 	port_text = gh->get_child_entry_text(widget_box, "LinkEntry");
-	gh->set_user_name(name_text);
+	gh->set_user_name(name_text, gh->users.size());
 	PORT = (uint16_t) atoi(port_text);
 
-	gh->hostButtonPressed(widget, widget_box);
-	/*
+
 	// host network
 	if (Network->host() != TRUE)
 	{
@@ -39,7 +38,7 @@ void host_button_callback(GtkWidget *widget, gpointer data)
 		// start audio library
 		gh->hostButtonPressed(widget, widget_box);
 		Audio->startVoiceStream();
-	}*/
+	}
 }
 
 void join_button_callback(GtkWidget *widget, gpointer data) 
@@ -51,7 +50,7 @@ void join_button_callback(GtkWidget *widget, gpointer data)
 	gchar *link_text;
 	name_text = gh->get_child_entry_text(widget_box, "NameEntry");
 	link_text = gh->get_child_entry_text(widget_box, "LinkEntry");
-	gh->set_user_name(name_text);
+	gh->set_user_name(name_text, gh->users.size());
 	gh->set_user_link(link_text);
 
 
@@ -89,11 +88,7 @@ void mute_button_callback(GtkWidget *widget)
 	const gchar* name = gtk_widget_get_name(list_row);
 	const std::string nameStr = name;
 	NPeer* mute_peer = (*Network)[nameStr];
-	if(mute_peer == NULL)
-	{
-		printf("ERROR: Could not find user to mute\n");
-		return;
-	}
+	
 	gboolean toggled = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	if(toggled)
 	{
@@ -124,6 +119,7 @@ void volume_callback(GtkVolumeButton *v1, gdouble value, gpointer data)
 {
 	PC_GuiHandler* gh = static_cast<PC_GuiHandler*>(data);
 	GtkWidget* widget_box = gh->get_widget_box();
+	gh->outputVolChanged(v1, value, widget_box);
 }
 
 void leave_button_callback(GtkWidget *widget, gpointer data) 

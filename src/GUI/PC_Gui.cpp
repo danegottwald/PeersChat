@@ -1,5 +1,4 @@
 #include <PC_Gui.hpp>
-#include "GuiCallbacks.cpp"
 #include <string.h>
 
 
@@ -13,7 +12,12 @@ PC_GuiHandler::PC_GuiHandler()
 	user_link = NULL;	
 	is_host = FALSE;
 
-	app = gtk_application_new("edu.ucsc.PeersChat", G_APPLICATION_FLAGS_NONE);
+	// Generate Unique Name by appending unix time in ms
+	char name[100];
+	sprintf(name, "edu.ucsc.PeersChat%" PRIu64, (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())).count());
+
+	// Create GTK Application
+	app = gtk_application_new(name, G_APPLICATION_FLAGS_NONE);
 	g_signal_connect(app, "activate", G_CALLBACK(activate_callback), this);
 }
 
@@ -70,7 +74,7 @@ void PC_GuiHandler::remove_name_from_session(const gchar *name)
 
 // GTK+ Callback functions bound to GtkObjects
 
-void PC_GuiHandler::activate(GtkApplication *app)
+void PC_GuiHandler::activate(GtkApplication *app, gpointer data)
 {
 	GtkWidget *window;
 	GtkWidget *peerschat_label;
@@ -120,8 +124,6 @@ void PC_GuiHandler::activate(GtkApplication *app)
 
 void PC_GuiHandler::hostButtonPressed(GtkWidget *widget, gpointer data)
 {	
-	g_return_if_fail(GTK_IS_BUTTON(widget));
-
 	gchar *name_text;
 	name_text = get_user_name();
 	
@@ -132,7 +134,7 @@ void PC_GuiHandler::hostButtonPressed(GtkWidget *widget, gpointer data)
 
 	else
 	{
-		set_user_name(name_text);
+		set_user_name(name_text, users.size());
 		
 		is_host = TRUE;
 		
@@ -143,8 +145,6 @@ void PC_GuiHandler::hostButtonPressed(GtkWidget *widget, gpointer data)
 
 void PC_GuiHandler::joinButtonPressed(GtkWidget *widget, gpointer data)
 {
-	g_return_if_fail(GTK_IS_BUTTON(widget));
-	
 	gchar *name_text;
 	gchar *link_text;
 
@@ -157,7 +157,7 @@ void PC_GuiHandler::joinButtonPressed(GtkWidget *widget, gpointer data)
 	}	
 	else
 	{
-		set_user_name(name_text);
+		set_user_name(name_text, users.size());
 		set_user_link(link_text);
 	
 		is_host = FALSE;
@@ -167,10 +167,13 @@ void PC_GuiHandler::joinButtonPressed(GtkWidget *widget, gpointer data)
 	}
 }
 
+void PC_GuiHandler::outputVolChanged(GtkVolumeButton *v1, gdouble value, gpointer data)
+{
+	Audio->setOutputVolume(value);
+}
+
 void PC_GuiHandler::leaveButtonPressed(GtkWidget *widget, gpointer data)
 {
-	g_return_if_fail(GTK_IS_BUTTON(widget));
-	
 	GtkWidget *lobby_box = get_widget_by_name(GTK_WIDGET(data), "LobbyBox");
 	gtk_widget_destroy(lobby_box);
 	gtk_widget_show_all(GTK_WIDGET(data));
@@ -218,9 +221,10 @@ GtkWidget* PC_GuiHandler::get_widget_box()
 	return widget_box;
 }
 
-void PC_GuiHandler::set_user_name(gchar *entry_text)
+void PC_GuiHandler::set_user_name(gchar *entry_text, size_t pos)
 {
 	user_name = entry_text;
+	users.insert({user_name, pos});
 }
 
 gchar* PC_GuiHandler::get_user_name()
