@@ -25,8 +25,6 @@ void host_button_callback(GtkWidget *widget, gpointer data)
 	port_text = gh->get_child_entry_text(widget_box, "LinkEntry");
 	gh->set_user_name(name_text);
 	PORT = (uint16_t) atoi(port_text);
-	
-	gh->hostButtonPressed(widget, widget_box);
 
 
 	// host network
@@ -38,6 +36,7 @@ void host_button_callback(GtkWidget *widget, gpointer data)
 	else
 	{
 		// start audio library
+		gh->hostButtonPressed(widget, widget_box);
 		Audio->startVoiceStream();
 	}
 }
@@ -53,8 +52,6 @@ void join_button_callback(GtkWidget *widget, gpointer data)
 	link_text = gh->get_child_entry_text(widget_box, "LinkEntry");
 	gh->set_user_name(name_text);
 	gh->set_user_link(link_text);
-	
-	gh->joinButtonPressed(widget, widget_box);
 
 
 	// parse link_text for IP address and port
@@ -80,6 +77,7 @@ void join_button_callback(GtkWidget *widget, gpointer data)
 	else
 	{
 		// start audio library
+		gh->joinButtonPressed(widget, widget_box);
 		Audio->startVoiceStream();
 	}
 }
