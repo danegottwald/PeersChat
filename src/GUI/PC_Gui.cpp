@@ -20,7 +20,6 @@ PC_GuiHandler::PC_GuiHandler()
 // Destructor
 PC_GuiHandler::~PC_GuiHandler()
 {
-	g_object_unref(app);
 }
 
 // Begins GUI event loop
