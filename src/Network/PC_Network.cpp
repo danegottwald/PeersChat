@@ -237,8 +237,8 @@ void NPeer::startNetStream() noexcept
 void NPeer::stopNetStream() noexcept
 {
 	run_thread = false;
-	std::this_thread::sleep_for(PEERS_CHAT_DESTRUCT_TIMEOUT);
-	audio_out_thread->join();
+	if(audio_out_thread.get() && audio_out_thread->joinable())
+		audio_out_thread->join();
 }
 
 
@@ -354,7 +354,8 @@ bool NPeer::create_udp_socket() noexcept
 	addr.sin_port = htons(PORT);
 	if(bind(udp, (sockaddr*) &addr, sizeof(addr)) < 0)
 	{
-		perror("NPeer::create_udp_socket() bind(): ");
+		perror("NPeer::create_udp_socket() bind()");
+		fprintf(stderr, "Failed on port %" PRIu16 "\n", ntohs(addr.sin_port));
 		return false;
 	}
 
@@ -765,8 +766,8 @@ bool PeersChatNetwork::start() noexcept
 	addr.sin_port = htons(PORT);
 	if(bind(tcp_listen, (sockaddr*) &addr, sizeof(addr)) < 0)
 	{
-		perror("PeersChatNetwork::start() bind() failed on port ");
-		fprintf(stderr, "%" PRIu16 "\n", ntohs(addr.sin_port));
+		perror("PeersChatNetwork::start() bind()");
+		fprintf(stderr, "Failed on port %" PRIu16 "\n", ntohs(addr.sin_port));
 		stop();
 		return false;
 	}
