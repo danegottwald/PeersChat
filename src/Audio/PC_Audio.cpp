@@ -107,6 +107,8 @@ int APeer::Pa_Callback(const void *input,
 		#endif
 	}
 
+	if(Network->getNumberPeers() == 0)
+		std::memset(output, 0, sizeof(float) * framesPerBuffer);
 	for (int i = 0; i < Network->getNumberPeers(); i++)
 	{
 		NPeer *peer = (*Network)[i];
