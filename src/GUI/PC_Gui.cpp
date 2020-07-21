@@ -396,7 +396,7 @@ void PC_GuiHandler::setup_lobby(GtkWidget *parent, GtkWidget *lobby_box)
 	gtk_widget_set_vexpand(lobby_box, TRUE);
 	gtk_container_add(GTK_CONTAINER(parent), lobby_box);
 
-	std::string port_string = "Hosting Port: " + std::to_string(PORT);
+	std::string port_string = "TCP/UDP listening on port: " + std::to_string(PORT);
 	GtkWidget *port_label = gtk_label_new(port_string.c_str());
 	gtk_container_add(GTK_CONTAINER(lobby_box), port_label);
 
