@@ -436,7 +436,7 @@ void NPeer::send_audio_over_network_thread() noexcept
 
 		// Send
 		packet->packet_len += SENDV_SIZE;
-		__attribute__((unused)) ssize_t sent = sendto(udp, buffer, packet->packet_len + SENDV_SIZE, 0,
+		ssize_t sent = sendto(udp, buffer, packet->packet_len + SENDV_SIZE, 0,
 		                                              (const sockaddr*) &destination, sizeof(destination));
 		#ifdef NET_DEBUG
 		if(sent != packet->packet_len + SENDV_SIZE)
@@ -1013,7 +1013,7 @@ void PeersChatNetwork::sendPeers(int sock)
 			pos += 6;
 		}
 	}
-	__attribute__((unused)) ssize_t size = send_timeout(sock, buffer, content_length + 5, MSG_NOSIGNAL);
+	ssize_t size = send_timeout(sock, buffer, content_length + 5, MSG_NOSIGNAL);
 	#ifdef NET_DEBUG
 	if(size != pos || pos != (content_length + 5))
 		std::cerr << "PeersChatNetwork::sendPeers() ERROR: Sent Incorrect amount of data" << std::endl;
