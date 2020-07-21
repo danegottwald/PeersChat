@@ -1076,12 +1076,9 @@ std::string PeersChatNetwork::getName(int sock) noexcept
 
 	// Parse Name
 	std::string name = "";
-	for(unsigned i = 0; i < buffer[2]; ++i)
-		name.push_back((char)buffer[3 + i]);
+	for(unsigned i = 0; i < buffer[1]; ++i)
+		name.push_back((char)buffer[2 + i]);
 
-	#ifdef NET_DEBUG
-	std::cout << "Received Name: " << name << std::endl;
-	#endif
 	return name;
 }
 
@@ -1214,7 +1211,7 @@ void PeersChatNetwork::listen_on_tcp_thread()
 			buffer[1] = (uint8_t) name.length();
 			for(int i = 0; i < buffer[1]; ++i)
 				buffer[2 + i] = name[i];
-			send_timeout(peer, buffer, 2 + buffer[2], MSG_NOSIGNAL);
+			send_timeout(peer, buffer, 2 + buffer[1], MSG_NOSIGNAL);
 		} // ------------------------------------------------------------------------
 
 		// End Request
