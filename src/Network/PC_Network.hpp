@@ -331,7 +331,7 @@ class NPeerAttorney
 		return peer->getDest();
 	}
 	static inline int getUDP() { return NPeer::udp; }
-	static inline void destroyUDP() { close(NPeer::udp); NPeer::udp = -1; }
+	static inline void destroyUDP() { if(NPeer::udp > 0) close(NPeer::udp); NPeer::udp = -1; }
 	static inline int getTCP(NPeer *peer) { return peer->tcp; }
 	friend class PeersChatNetwork;
 };
