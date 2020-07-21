@@ -1,10 +1,8 @@
 #ifndef _GUICALLBACKS_HPP
 #define _GUICALLBACKS_HPP
 
+#include <PC_Network.hpp>
 #include <PC_Gui.hpp>
-
-extern PeersChatNetwork *Network;
-extern APeer *Audio;
 
 /*
  *	PeersChar GUI Callback Functions

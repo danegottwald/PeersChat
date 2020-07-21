@@ -1,6 +1,12 @@
 #include <GuiCallbacks.hpp>
 #include <string>
 
+
+// Extern Globals
+extern PeersChatNetwork *Network;
+extern APeer *Audio;
+
+
 /*
  *	PeersChar GUI Callback Functions
  *
