@@ -1118,6 +1118,9 @@ void PeersChatNetwork::receive_audio_thread()
 			continue;
 		}
 
+		// Peer is Muted
+		iif(peer.getMute()) continue;
+
 		// Get Empty Packet
 		std::unique_ptr<AudioInPacket> pack(peer->getEmptyInPacket());
 
