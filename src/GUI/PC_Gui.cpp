@@ -74,6 +74,18 @@ void PC_GuiHandler::remove_name_from_session(const gchar *name)
 	}
 }
 
+void PC_GuiHandler::add_npeer_to_gui(NPeer* peer)
+{
+	users[peer->getName()] = peer;
+	add_user_to_session(peer->getName().c_str(), FALSE);
+}
+
+void PC_GuiHandler::remove_npeer_from_gui(NPeer* peer)
+{
+	remove_name_from_session(peer->getName().c_str());
+	users.erase(peer->getName());
+}
+
 void PC_GuiHandler::refresh_name_list()
 {
 	// Clear current name list
@@ -96,10 +108,8 @@ void PC_GuiHandler::refresh_name_list()
 		if(current_peer == NULL) {
 			continue;
 		}
-		int current_id = current_peer->getID();
 		gchar* peer_name = const_cast<gchar*>((current_peer->getName()).c_str());
 		// Use map to get peer_name from ID
-		users[current_id] = peer_name;
 		
 		if(is_host)
 			add_user_to_session(peer_name, TRUE);
@@ -282,10 +292,9 @@ GtkWidget* PC_GuiHandler::get_widget_box()
 	return widget_box;
 }
 
-void PC_GuiHandler::set_user_name(gchar *entry_text, size_t pos)
+void PC_GuiHandler::set_user_name(gchar *entry_text)
 {
 	user_name = entry_text;
-	users.insert({pos, user_name});
 }
 
 gchar* PC_GuiHandler::get_user_name()
@@ -314,6 +323,10 @@ gchar* PC_GuiHandler::get_user_port()
 	return user_port;
 }
 
+NPeer* PC_GuiHandler::get_npeer(gchar *peer_name)
+{
+	return users[std::string(peer_name)];
+}
 
 // Private Utility Functions
 

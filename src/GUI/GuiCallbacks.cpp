@@ -32,7 +32,7 @@ void host_button_callback(GtkWidget *widget, gpointer data)
 	uint16_t port = (uint16_t) atoi(port_text);
 	if(port > 0)
 		PORT = port;
-	gh->set_user_name(name_text, gh->users.size());
+	gh->set_user_name(name_text);
 	Network->setMyName(name_text);
 
 	// host network
@@ -61,7 +61,7 @@ void join_button_callback(GtkWidget *widget, gpointer data)
 	name_text = gh->get_child_entry_text(widget_box, "NameEntry");
 	link_text = gh->get_child_entry_text(widget_box, "LinkEntry");
 	port_text = gh->get_child_entry_text(widget_box, "PortEntry");
-	gh->set_user_name(name_text, gh->users.size());
+	gh->set_user_name(name_text);
 	Network->setMyName(name_text);
 	gh->set_user_link(link_text);
 	gh->set_user_port(port_text);

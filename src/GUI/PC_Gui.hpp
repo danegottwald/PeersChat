@@ -31,6 +31,8 @@
 // Max name length: Cannot exceed # of characters
 #define MAX_NAME_LEN 18
 
+// Forward declaration of NPeer to keep track of peers in GUI session
+class NPeer;
 
 // GuiHandler Class -----------------------------------------------------------------------
 /* GuiHandler: Class for encapsulating GUI functionality 
@@ -126,9 +128,9 @@ private:
 	
 	bool is_host;
 	
-public:
-	// Maps user id -> name
-	std::map<int, gchar*> users;
+	// Maps user name -> NPeer*
+	std::map<std::string, NPeer*> users;
+		
 	
 // Constructor, destructor, and initializer
 public:
@@ -140,6 +142,8 @@ public:
 	void add_host_to_session(const gchar *name);
 	void add_user_to_session(const gchar *name, bool kickable);
 	void remove_name_from_session(const gchar *name);
+	void add_npeer_to_gui(NPeer* peer);
+	void remove_npeer_from_gui(NPeer* peer);
 	void refresh_name_list();
 	
 // Callback Functions
@@ -153,12 +157,13 @@ public:
 	gchar *get_child_entry_text(GtkWidget *container, const gchar *entry_name);
 	GtkWidget* get_widget_box();
 	
-	void set_user_name(gchar *entry_text, size_t pos);
+	void set_user_name(gchar *entry_text);
 	gchar* get_user_name();
 	void set_user_link(gchar *entry_text);
 	gchar* get_user_link();
 	void set_user_port(gchar *entry_text);
 	gchar* get_user_port();
+	NPeer* get_npeer(gchar *peer_name);
 	
 // Utility Functions
 private:
