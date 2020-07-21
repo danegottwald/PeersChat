@@ -88,65 +88,65 @@ int APeer::Pa_Callback(const void *input,
                        PaStreamCallbackFlags status_flags,
                        void *userData)
 {
+	// Buffer For Audio Out
 	static uint8_t buffer[BUFFER_SIZE];
 	uint32_t buffer_len = 0;
 
+	// Cast to correct type
 	float *in = (float *) input;
 	float *out = (float *) output;
-	if (inputVolume != 1.0f && (inputVolume >= 0 && inputVolume <= 1.5f)) {
-		for (unsigned int i = 0; i < framesPerBuffer; ++i) {
+
+	// Mic Input Volume Multiplier
+	if (inputVolume < 0.98f || inputVolume > 1.02f)
+	{
+		for (unsigned int i = 0; i < framesPerBuffer; ++i)
 			in[i] *= inputVolume;
-		}
 	}
 
-	if (!micMute || inputVolume != 0) {
-		buffer_len = opus_encode_float(encoder, in, FRAME_SIZE, buffer, BUFFER_SIZE);
+	// Encode Audio Into Opus Packet and Store into Buffer
+	buffer_len = opus_encode_float(encoder, in, FRAME_SIZE, buffer, BUFFER_SIZE);
+	#ifdef AUDIO_DEBUG
+	opus_error_check("Failed to encode frame", buffer_len, true);
+	#endif
 
-		#ifdef AUDIO_DEBUG
-		opus_error_check("Failed to encode frame", buffer_len, true);
-		#endif
-	}
-
-	if(Network->getNumberPeers() == 0)
+	// Clear Output Buffer If it isn't getting filled with more data
+	if(Network->getNumberPeers() == 0 || deafen)
 		std::memset(output, 0, sizeof(float) * framesPerBuffer);
+
+	// Send/Retrieve Data From Peers
 	for (int i = 0; i < Network->getNumberPeers(); i++)
 	{
 		NPeer *peer = (*Network)[i];
 
-		// Audio Out
-		AudioOutPacket *out_pack = peer->getEmptyOutPacket();
+		// Give Peer Copy of Output Audio
+		std::unique_ptr<AudioOutPacket> out_pack(peer->getEmptyOutPacket());
 		std::memcpy(out_pack->packet.get(), buffer, buffer_len);
 		out_pack->packet_len = buffer_len;
-		peer->enqueue_out(out_pack);
+		peer->enqueue_out(out_pack.release());
 
-		// Audio In
+		// Get Audio From Peer
 		uint32_t lastPacketID = peer->getInPacketId();
-		AudioInPacket *inPacket = peer->getAudioInPacket();
-		if (inPacket != nullptr) {
-			PACKETS_LOST += inPacket->packet_id - lastPacketID - 1;
-			TOTAL_PACKETS = inPacket->packet_id;
-			if (!deafen) {  // May cause port audio to continuously play last packet, needs testing, check else
-				int decodedFrame = opus_decode_float(decoder,
-				                                     inPacket->packet.get(),
-				                                     inPacket->packet_len,
-				                                     out,
-				                                     FRAME_SIZE,
-				                                     0);
-				#ifdef AUDIO_DEBUG
-				opus_error_check("Failed to decode frame", decodedFrame, false);
-				#endif
-			}
-			else {
-				out = nullptr;
-			}
-			peer->retireEmptyInPacket(inPacket);
-			if ((!deafen && outputVolume != 1.0f)
-			    && (outputVolume >= 0 && outputVolume <= 2.0f)) {
-				for (unsigned int j = 0; j < framesPerBuffer; ++j) {
-					out[i] *= outputVolume;
-				}
-			}
-		}
+		std::unique_ptr<AudioInPacket> inPacket(peer->getAudioInPacket());
+		if (inPacket.get() == nullptr) continue;
+
+		// Gather Packet Loss Statistics
+		PACKETS_LOST += inPacket->packet_id - lastPacketID - 1;
+		TOTAL_PACKETS = inPacket->packet_id;
+
+		// Decode Audio Input
+		if(deafen) continue;
+		int decodedFrame = opus_decode_float(decoder, inPacket->packet.get(), inPacket->packet_len, out, FRAME_SIZE, 0);
+		#ifdef AUDIO_DEBUG
+		opus_error_check("Failed to decode frame", decodedFrame, false);
+		#endif
+		peer->retireEmptyInPacket(inPacket.release());
+	}
+
+	// Apply Output Volume Multiplier
+	if(!deafen && (Network->getNumberPeers() > 0) && (outputVolume < 0.98f || outputVolume > 1.02f))
+	{
+		for(unsigned int j = 0; j < framesPerBuffer; ++j)
+			out[j] *= outputVolume;
 	}
 	return 0;
 }
