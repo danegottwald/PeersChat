@@ -1085,6 +1085,7 @@ std::string PeersChatNetwork::getName(int sock) noexcept
 	for(unsigned i = 0; i < buffer[1]; ++i)
 		name.push_back((char)buffer[2 + i]);
 
+	GUI->refresh_name_list();
 	return name;
 }
 
