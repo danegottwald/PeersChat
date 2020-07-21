@@ -97,7 +97,11 @@ int APeer::Pa_Callback(const void *input,
 	float *out = (float *) output;
 
 	// Mic Input Volume Multiplier
-	if (inputVolume < 0.98f || inputVolume > 1.02f)
+	if(micMute)
+	{
+		std::memset((void*) in, 0, sizeof(float) * framesPerBuffer);
+	}
+	else if (inputVolume < 0.98f || inputVolume > 1.02f)
 	{
 		for (unsigned int i = 0; i < framesPerBuffer; ++i)
 			in[i] *= inputVolume;
@@ -111,7 +115,7 @@ int APeer::Pa_Callback(const void *input,
 
 	// Clear Output Buffer If it isn't getting filled with more data
 	if(Network->getNumberPeers() == 0 || deafen)
-		std::memset(output, 0, sizeof(float) * framesPerBuffer);
+		std::memset((void*) out, 0, sizeof(float) * framesPerBuffer);
 
 	// Send/Retrieve Data From Peers
 	for (int i = 0; i < Network->getNumberPeers(); i++)
