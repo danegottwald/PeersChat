@@ -670,8 +670,6 @@ void PeersChatNetwork::getNames() noexcept
 		this->peers[i]->setName(this->getName(NPeerAttorney::getTCP(this->peers[i].get())));
 		NPeerAttorney::destroyTCP(this->peers[i].get());
 	}
-
-	GUI->refresh_name_list();
 }
 
 
@@ -892,10 +890,14 @@ bool PeersChatNetwork::addPeer(const sockaddr_in &addr) noexcept
 	NPeer *peer = new NPeer(addr);
 	if(running) peer->startNetStream();
 
-	std::lock_guard<std::mutex> lock(this->peers_lock);
-	if(this->size >= MAX_PEERS) return false;
-	this->peers.emplace_back(peer);
-	this->size++;
+	{
+		std::lock_guard<std::mutex> lock(this->peers_lock);
+		if(this->size >= MAX_PEERS) return false;
+		this->peers.emplace_back(peer);
+		this->size++;
+	}
+
+	GUI->add_npeer_to_gui(peer);
 	return true;
 }
 
@@ -918,7 +920,8 @@ void PeersChatNetwork::removePeer(sockaddr_in &addr) noexcept
 			(peers[loc]).swap(peers[peers.size()-1]);
 	}
 
-	// Eliminate Them
+	// Inform GUI and Eliminate Them
+	GUI->remove_npeer_from_gui(this->peers.back().get());
 	this->peers.pop_back();
 }
 
