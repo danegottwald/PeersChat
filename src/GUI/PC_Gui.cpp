@@ -323,7 +323,7 @@ gchar* PC_GuiHandler::get_user_port()
 	return user_port;
 }
 
-NPeer* PC_GuiHandler::get_npeer(gchar *peer_name)
+NPeer* PC_GuiHandler::get_npeer(const gchar *peer_name)
 {
 	return users[std::string(peer_name)];
 }

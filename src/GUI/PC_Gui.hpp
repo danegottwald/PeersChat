@@ -163,7 +163,7 @@ public:
 	gchar* get_user_link();
 	void set_user_port(gchar *entry_text);
 	gchar* get_user_port();
-	NPeer* get_npeer(gchar *peer_name);
+	NPeer* get_npeer(const gchar *peer_name);
 	
 // Utility Functions
 private:

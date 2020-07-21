@@ -17,6 +17,7 @@ extern APeer *Audio;
 void activate_callback(GtkApplication *app, gpointer data)
 {
 	PC_GuiHandler* gh = static_cast<PC_GuiHandler*>(data);
+	Audio->setOutputVolume(DEFAULT_VOLUME_SLIDER_VALUE);
 	gh->activate(app);
 }
 
@@ -94,12 +95,18 @@ void join_button_callback(GtkWidget *widget, gpointer data)
 	}
 }
 
-void mute_button_callback(GtkWidget *widget)
+void mute_button_callback(GtkWidget *widget, gpointer data)
 {
+	PC_GuiHandler* gh = static_cast<PC_GuiHandler*>(data);
 	GtkWidget* list_row = gtk_widget_get_parent(widget);
 	const gchar* name = gtk_widget_get_name(list_row);
-	const std::string nameStr = name;
-	NPeer* mute_peer = (*Network)[nameStr];
+	if(strcmp(name, gh->get_user_name()) == 0)
+	{
+		printf("Call made to mute self\n");
+		return;
+	}
+	
+	NPeer* mute_peer = gh->get_npeer(const_cast<gchar*>(name));
 	if(mute_peer == NULL) {
 		printf("ERROR: Could not find user to mute\n");
 		return;
