@@ -134,7 +134,12 @@ int APeer::Pa_Callback(const void *input,
 		TOTAL_PACKETS = inPacket->packet_id;
 
 		// Decode Audio Input
-		if(deafen) continue;
+		if(deafen)
+		{
+			peer->retireEmptyInPacket(inPacket.release());
+			continue;
+		}
+
 		int decodedFrame = opus_decode_float(decoder, inPacket->packet.get(), inPacket->packet_len, out, FRAME_SIZE, 0);
 		#ifdef AUDIO_DEBUG
 		opus_error_check("Failed to decode frame", decodedFrame, false);
@@ -144,10 +149,8 @@ int APeer::Pa_Callback(const void *input,
 
 	// Apply Output Volume Multiplier
 	if(!deafen && (Network->getNumberPeers() > 0) && (outputVolume < 0.98f || outputVolume > 1.02f))
-	{
 		for(unsigned int j = 0; j < framesPerBuffer; ++j)
 			out[j] *= outputVolume;
-	}
 	return 0;
 }
 
