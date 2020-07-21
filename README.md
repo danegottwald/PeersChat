@@ -56,15 +56,8 @@ $ make
 $ ./PeersChat
 ```
 
-##### GUI-mode
+##### GUI
 <p align="left">
   <img src="./Release Documents/images/lobby.png" title="PeersChat Lobby" alt="PeersChat Lobby">
   <img src="./Release Documents/images/room.png" title="PeersChat Room" alt="PeersChat Room">
 </p>
-
-##### CLI-mode
-Running the PeersChat application without flags will open up the GUI-mode of this application. To run with **CLI-mode**, add any combination of arguments following the execute command.
-```bash
-./PeersChat username [-j address:port]
-```
-Running the application only inputting a username will create a room with you as the host. To join a room, add the -j flag followed by the address of the room you want to join.
