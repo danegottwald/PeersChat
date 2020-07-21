@@ -306,7 +306,6 @@ gchar* PC_GuiHandler::get_user_link()
 void PC_GuiHandler::set_user_port(gchar *entry_text)
 {
 	user_port = entry_text;
-	PORT = (uint16_t) atoi(entry_text);
 }
 
 gchar* PC_GuiHandler::get_user_port()
@@ -383,6 +382,10 @@ void PC_GuiHandler::setup_lobby(GtkWidget *parent, GtkWidget *lobby_box)
 	gtk_widget_set_vexpand(lobby_box, TRUE);
 	gtk_container_add(GTK_CONTAINER(parent), lobby_box);
 
+	std::string port_string = "Hosting Port: " + std::to_string(PORT);
+	GtkWidget *port_label = gtk_label_new(port_string.c_str());
+	gtk_container_add(GTK_CONTAINER(lobby_box), port_label);
+
 	name_list = gtk_list_box_new();
 	gtk_list_box_set_selection_mode(GTK_LIST_BOX(name_list), GTK_SELECTION_NONE);
 	gtk_container_add(GTK_CONTAINER(lobby_box), name_list);
@@ -396,6 +399,9 @@ void PC_GuiHandler::setup_lobby(GtkWidget *parent, GtkWidget *lobby_box)
 	
 	GtkWidget *indirectToggle = create_indirect_join_toggle();
 	gtk_box_pack_end(GTK_BOX(lobby_box), indirectToggle, FALSE, FALSE, 0);
+	
+	GtkWidget *directToggle = create_direct_join_toggle();
+	gtk_box_pack_end(GTK_BOX(lobby_box), directToggle, FALSE, FALSE, 0);
 	
 	if(is_host) 
 	{
@@ -425,6 +431,21 @@ GtkWidget* PC_GuiHandler::create_volume_slider()
 	gtk_box_pack_end(GTK_BOX(outputBox), outputLabel, FALSE, FALSE, 0);
 	
 	return outputBox;
+}
+
+GtkWidget* PC_GuiHandler::create_direct_join_toggle()
+{
+	GtkWidget *directBox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, DEFAULT_WIDGET_PADDING);
+	gtk_widget_set_vexpand(directBox, TRUE);
+	
+	GtkWidget *directCheck = gtk_check_button_new();
+	gtk_box_pack_end(GTK_BOX(directBox), directCheck, TRUE, FALSE, 0);
+	g_signal_connect(directCheck, "clicked", G_CALLBACK(direct_checkmark_callback), this);
+	
+	GtkWidget *directLabel = gtk_label_new((const gchar*) "Allow Direct Joins");
+	gtk_box_pack_end(GTK_BOX(directBox), directLabel, FALSE, FALSE, 0);
+	
+	return directBox;
 }
 
 GtkWidget* PC_GuiHandler::create_indirect_join_toggle()
