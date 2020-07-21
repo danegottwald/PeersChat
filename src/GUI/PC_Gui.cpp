@@ -304,6 +304,7 @@ gchar* PC_GuiHandler::get_user_link()
 void PC_GuiHandler::set_user_port(gchar *entry_text)
 {
 	user_port = entry_text;
+	PORT = (uint16_t) atoi(entry_text);
 }
 
 gchar* PC_GuiHandler::get_user_port()
