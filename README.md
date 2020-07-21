@@ -58,6 +58,6 @@ $ ./PeersChat
 
 ##### GUI
 <p align="left">
-  <img src="./Release Documents/images/lobby.png" title="PeersChat Lobby" alt="PeersChat Lobby">
-  <img src="./Release Documents/images/room.png" title="PeersChat Room" alt="PeersChat Room">
+	<img src="./Release Documents/images/lobby.png" title="PeersChat Lobby" alt="PeersChat Lobby">
+	<img src="./Release Documents/images/room.png" title="PeersChat Room" alt="PeersChat Room">
 </p>
