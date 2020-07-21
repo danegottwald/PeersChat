@@ -124,7 +124,8 @@ private:
 	bool is_host;
 	
 public:
-	std::map<gchar*, size_t> users;
+	// Maps user id -> name
+	std::map<size_t, gchar*> users;
 	
 // Constructor, destructor, and initializer
 public:

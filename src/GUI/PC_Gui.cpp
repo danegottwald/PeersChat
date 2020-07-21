@@ -75,13 +75,18 @@ void PC_GuiHandler::remove_name_from_session(const gchar *name)
 
 void PC_GuiHandler::refresh_name_list()
 {
+	// Clear current name list
 	GList *list_rows = gtk_container_get_children(GTK_CONTAINER(name_list));
 	while(list_rows != NULL)
 	{
 		gtk_widget_destroy(GTK_WIDGET(list_rows->data));
 		list_rows = list_rows->next;
 	}
+	
+	// Add self back to name list
+	add_user_to_session(user_name, FALSE);
 
+	// Add NPeers to name list based on their ID
 	int numPeers = Network->getNumberPeers();
 	for(int peer_index = 0; peer_index < numPeers; peer_index++)
 	{
@@ -89,10 +94,15 @@ void PC_GuiHandler::refresh_name_list()
 		if(current_peer == NULL) {
 			continue;
 		}
-		//int current_id = current_peer->getID();
+		int current_id = current_peer->getID();
+		gchar* peer_name = const_cast<gchar*>((current_peer->getName()).c_str());
 		// Use map to get peer_name from ID
+		users[current_id] = peer_name;
 		
-		// add_user_to_session(peer_name, FALSE);
+		if(is_host)
+			add_user_to_session(peer_name, TRUE);
+		else 
+			add_user_to_session(peer_name, FALSE);
 	}
 }
 
@@ -273,7 +283,7 @@ GtkWidget* PC_GuiHandler::get_widget_box()
 void PC_GuiHandler::set_user_name(gchar *entry_text, size_t pos)
 {
 	user_name = entry_text;
-	users.insert({user_name, pos});
+	users.insert({pos, user_name});
 }
 
 gchar* PC_GuiHandler::get_user_name()
