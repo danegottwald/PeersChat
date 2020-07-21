@@ -73,8 +73,7 @@ void join_button_callback(GtkWidget *widget, gpointer data)
 	{
 		printf("ERROR: IP Address String is not a valid IPv4 Address.\n");
 	}
-	addr.sin_port = htons((uint16_t) atoi(host_port.c_str()));	
-
+	addr.sin_port = htons((uint16_t) atoi(host_port.c_str()));
 	if (Network->join(addr) != TRUE)
 	{
 		printf("ERROR: Connection could not be established\n");
