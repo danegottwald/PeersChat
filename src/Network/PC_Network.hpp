@@ -287,13 +287,13 @@ public:
 
 	// Sending Audio -- All the functions you need to send audio
 	AudioOutPacket* getEmptyOutPacket() noexcept;
-	void enqueue_out(AudioOutPacket * &packet);
+	void enqueue_out(AudioOutPacket *packet);
 	void startNetStream() noexcept;
 	void stopNetStream() noexcept;
 
 	// Receiving Audio -- All the functions you need to receive audio
 	AudioInPacket* getEmptyInPacket() noexcept;
-	void retireEmptyInPacket(AudioInPacket * &packet) noexcept;
+	void retireEmptyInPacket(AudioInPacket *packet) noexcept;
 	void enqueue_in(AudioInPacket *packet);
 	AudioInPacket* getAudioInPacket() noexcept;
 	inline uint32_t getInPacketId() noexcept { return in_packet_id; }
@@ -306,7 +306,7 @@ private:
 	std::unique_ptr<std::thread> audio_out_thread;
 	static bool create_udp_socket() noexcept;
 	AudioOutPacket* getAudioOutPacket() noexcept;
-	void retireEmptyOutPacket(AudioOutPacket * &packet) noexcept;
+	void retireEmptyOutPacket(AudioOutPacket *packet) noexcept;
 	void send_audio_over_network_thread() noexcept;
 
 	// Connections over TCP

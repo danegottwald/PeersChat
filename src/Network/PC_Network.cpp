@@ -209,7 +209,7 @@ AudioOutPacket* NPeer::getEmptyOutPacket() noexcept
 }
 
 
-void NPeer::enqueue_out(AudioOutPacket * &packet)
+void NPeer::enqueue_out(AudioOutPacket *packet)
 {
 	if(!packet) throw NullPtr();
 	else if(packet->packet_len == 0) throw EmptyPack();
@@ -261,13 +261,11 @@ AudioInPacket* NPeer::getEmptyInPacket() noexcept
 }
 
 
-void NPeer::retireEmptyInPacket(AudioInPacket * &packet) noexcept
+void NPeer::retireEmptyInPacket(AudioInPacket *packet) noexcept
 {
 	in_bucket_lock.lock();
 	in_bucket.emplace(packet);
 	in_bucket_lock.unlock();
-
-	packet = NULL;
 }
 
 
@@ -380,13 +378,11 @@ AudioOutPacket* NPeer::getAudioOutPacket() noexcept
 }
 
 
-void NPeer::retireEmptyOutPacket(AudioOutPacket * &packet) noexcept
+void NPeer::retireEmptyOutPacket(AudioOutPacket *packet) noexcept
 {
 	out_bucket_lock.lock();
 	out_bucket.emplace(packet);
 	out_bucket_lock.unlock();
-
-	packet = NULL;
 }
 
 
@@ -1081,6 +1077,9 @@ std::string PeersChatNetwork::getName(int sock) noexcept
 	for(unsigned i = 0; i < buffer[2]; ++i)
 		name.push_back((char)buffer[3 + i]);
 
+	#ifdef NET_DEBUG
+	std::cout << "Received Name: " << name << std::endl;
+	#endif
 	return name;
 }
 
@@ -1183,7 +1182,7 @@ void PeersChatNetwork::listen_on_tcp_thread()
 		{
 			#ifdef NET_DEBUG
 			inet_ntop(AF_INET, &addr.sin_addr, (char*)buffer, INET_ADDRSTRLEN+10);
-			fprintf(stderr, "PeersChatNetwork::listen_on_tcp_thread() ADDRESS recv'd is %s:%" PRIu16 "\n", buffer, ntohs(addr.sin_port));
+			fprintf(stderr, "DISCONNECT Req recv'd from %s:%" PRIu16 "\n", buffer, ntohs(addr.sin_port));
 			#endif
 
 			if(2 != recv_timeout(peer, &addr.sin_port, 2, MSG_WAITALL)) continue;
