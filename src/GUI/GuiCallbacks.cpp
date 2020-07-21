@@ -24,7 +24,6 @@ void host_button_callback(GtkWidget *widget, gpointer data)
 	name_text = gh->get_child_entry_text(widget_box, "NameEntry");
 	port_text = gh->get_child_entry_text(widget_box, "PortEntry");
 	uint16_t port = (uint16_t) atoi(port_text);
-	g_print("PORT: %d\n", port);
 	if(port > 0)
 		PORT = port;
 	gh->set_user_name(name_text, gh->users.size());
@@ -125,6 +124,20 @@ void kick_button_callback(GtkWidget *widget, gpointer data)
 	
 	gh->remove_name_from_session(name);
 }
+
+void direct_checkmark_callback(GtkWidget *widget)
+{
+	gboolean toggled = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
+	if(toggled)
+	{
+		g_print("Direct Joins Toggled\n");
+	}
+	else
+	{
+		g_print("Direct Joins Untoggled\n");
+	}
+}
+
 
 void indirect_checkmark_callback(GtkWidget *widget)
 {

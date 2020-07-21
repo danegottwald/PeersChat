@@ -398,6 +398,9 @@ void PC_GuiHandler::setup_lobby(GtkWidget *parent, GtkWidget *lobby_box)
 	GtkWidget *indirectToggle = create_indirect_join_toggle();
 	gtk_box_pack_end(GTK_BOX(lobby_box), indirectToggle, FALSE, FALSE, 0);
 	
+	GtkWidget *directToggle = create_direct_join_toggle();
+	gtk_box_pack_end(GTK_BOX(lobby_box), directToggle, FALSE, FALSE, 0);
+	
 	if(is_host) 
 	{
 		add_host_to_session(user_name);
@@ -426,6 +429,21 @@ GtkWidget* PC_GuiHandler::create_volume_slider()
 	gtk_box_pack_end(GTK_BOX(outputBox), outputLabel, FALSE, FALSE, 0);
 	
 	return outputBox;
+}
+
+GtkWidget* PC_GuiHandler::create_direct_join_toggle()
+{
+	GtkWidget *directBox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, DEFAULT_WIDGET_PADDING);
+	gtk_widget_set_vexpand(directBox, TRUE);
+	
+	GtkWidget *directCheck = gtk_check_button_new();
+	gtk_box_pack_end(GTK_BOX(directBox), directCheck, TRUE, FALSE, 0);
+	g_signal_connect(directCheck, "clicked", G_CALLBACK(direct_checkmark_callback), this);
+	
+	GtkWidget *directLabel = gtk_label_new((const gchar*) "Allow Direct Joins");
+	gtk_box_pack_end(GTK_BOX(directBox), directLabel, FALSE, FALSE, 0);
+	
+	return directBox;
 }
 
 GtkWidget* PC_GuiHandler::create_indirect_join_toggle()
