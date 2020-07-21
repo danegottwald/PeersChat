@@ -765,7 +765,8 @@ bool PeersChatNetwork::start() noexcept
 	addr.sin_port = htons(PORT);
 	if(bind(tcp_listen, (sockaddr*) &addr, sizeof(addr)) < 0)
 	{
-		perror("PeersChatNetwork::start() bind()");
+		perror("PeersChatNetwork::start() bind() failed on port ");
+		fprintf(stderr, "%" PRIu16 "\n", ntohs(addr.sin_port));
 		stop();
 		return false;
 	}
