@@ -40,6 +40,7 @@ void host_button_callback(GtkWidget *widget, gpointer data)
 		// start audio library
 		gh->hostButtonPressed(widget, widget_box);
 		Audio->startVoiceStream();
+		std::cout << "Hosting Successful, Starting Voice Stream" << std::endl;
 	}
 }
 
@@ -140,7 +141,6 @@ void indirect_checkmark_callback(GtkWidget *widget)
 void volume_callback(GtkVolumeButton *v1, gdouble value)
 {
 	g_return_if_fail(GTK_IS_VOLUME_BUTTON(v1));
-	
 	Audio->setOutputVolume(value);
 }
 
