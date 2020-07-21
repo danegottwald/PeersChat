@@ -76,18 +76,29 @@ void PC_GuiHandler::remove_name_from_session(const gchar *name)
 
 void PC_GuiHandler::add_npeer_to_gui(NPeer* peer)
 {
-	users[peer->getName()] = peer;
+	g_print("Add npeer to gui called\n");
+	users.push_back(peer);
 	add_user_to_session(peer->getName().c_str(), FALSE);
 }
 
 void PC_GuiHandler::remove_npeer_from_gui(NPeer* peer)
 {
-	remove_name_from_session(peer->getName().c_str());
-	users.erase(peer->getName());
+	g_print("Remove npeer from gui called\n");
+	std::vector<NPeer*>::iterator users_iter;
+	for(users_iter = users.begin(); users_iter != users.end(); ++users_iter)
+	{
+		if(*users_iter == peer)
+		{
+			remove_name_from_session((peer->getName()).c_str());
+			users.erase(users_iter);
+			break;
+		}
+	}
 }
 
 void PC_GuiHandler::refresh_name_list()
 {
+	g_print("Refresh name list called\n");
 	// Clear current name list
 	GList *list_rows = gtk_container_get_children(GTK_CONTAINER(name_list));
 	while(list_rows != NULL)
@@ -95,27 +106,25 @@ void PC_GuiHandler::refresh_name_list()
 		gtk_widget_destroy(GTK_WIDGET(list_rows->data));
 		list_rows = list_rows->next;
 	}
-	
 	// Add self back to name list
 	add_user_to_session(user_name, FALSE);
 
-	// Add NPeers to name list based on their ID
-	this->users.clear();
-	int numPeers = Network->getNumberPeers();
-	for(int peer_index = 0; peer_index < numPeers; peer_index++)
+	// Refresh name list based on current name of NPeer
+	for(size_t user_index = 0; user_index < users.size(); ++user_index)
 	{
-		NPeer *current_peer = (*Network)[peer_index];
+		NPeer *current_peer = users[user_index];
 		if(current_peer == NULL) {
 			continue;
 		}
 		gchar* peer_name = const_cast<gchar*>((current_peer->getName()).c_str());
-		// Use map to get peer_name from ID
 		
 		if(is_host)
 			add_user_to_session(peer_name, TRUE);
 		else 
 			add_user_to_session(peer_name, FALSE);
 	}
+	
+	gtk_widget_show_all(name_list);
 }
 
 
@@ -325,7 +334,18 @@ gchar* PC_GuiHandler::get_user_port()
 
 NPeer* PC_GuiHandler::get_npeer(const gchar *peer_name)
 {
-	return users[std::string(peer_name)];
+	NPeer* return_peer = NULL;
+	for(size_t user_index = 0; user_index < users.size(); ++user_index)
+	{
+		NPeer* current_peer = users[user_index];
+		gchar *current_name = const_cast<gchar*>((current_peer->getName()).c_str());
+		if(strcmp(current_name, peer_name) == 0)
+		{
+			return_peer = current_peer;
+			break;
+		}
+	}
+	return return_peer;
 }
 
 // Private Utility Functions

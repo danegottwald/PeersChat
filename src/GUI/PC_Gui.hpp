@@ -129,7 +129,7 @@ private:
 	bool is_host;
 	
 	// Maps user name -> NPeer*
-	std::map<std::string, NPeer*> users;
+	std::vector<NPeer*> users;
 		
 	
 // Constructor, destructor, and initializer
