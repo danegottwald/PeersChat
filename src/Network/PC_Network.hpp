@@ -256,6 +256,7 @@ private:
 		// Identification
 	char pname[MAX_NAME_LEN+1];
 	int ID;
+	bool muted = false;
 		// Audio Incoming
 	std::priority_queue<std::unique_ptr<AudioInPacket>,
 	                    std::vector<std::unique_ptr<AudioInPacket>>,
@@ -280,10 +281,12 @@ public:
 	NPeer(const sockaddr_in &addr) noexcept;
 	~NPeer() noexcept;
 
-	// Name/ID
+	// Name/ID/Mute
 	std::string getName() noexcept;
 	bool setName(std::string name) noexcept;
 	inline int getID() noexcept { return this->ID; }
+	inline void setMute(bool x) noexcept { this->muted = x; }
+	inline bool getMute() noexcept { return this->muted; }
 
 
 	// Sending Audio -- All the functions you need to send audio
