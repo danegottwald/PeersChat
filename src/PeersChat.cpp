@@ -15,6 +15,7 @@ class PeersChat
 
 PeersChatNetwork *Network = NULL;
 APeer *Audio = NULL;
+PC_GuiHandler *GUI = NULL;
 
 int main(const int argc, char *argv[])
 {	
@@ -24,6 +25,7 @@ int main(const int argc, char *argv[])
 	// Make Network accessible globaly
 	Network = &(pchat->network);
 	Audio = &(pchat->audio);
+	GUI = &(pchat->GUI);
 
 	if(argc > 1)
 	{
