@@ -4,7 +4,7 @@ CFLAGS= -std=c++14 -Wall -Wextra -pedantic -Wpedantic -O3 $(INCLUDE)
 LFLAGS= -lstdc++ $$(pkg-config --libs portaudio-2.0 opus gtk+-3.0)
 TARGET= PeersChat
 
-all: $(TARGET) tidy
+all: $(TARGET)# tidy
 
 $(TARGET): $(TARGET).o PC_Audio.o PC_Network.o PC_Gui.o GuiCallbacks.o
 	$(CC) $^ -o $(TARGET) $(LFLAGS)
