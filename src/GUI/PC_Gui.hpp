@@ -127,7 +127,7 @@ private:
 	
 public:
 	// Maps user id -> name
-	std::map<size_t, gchar*> users;
+	std::map<int, gchar*> users;
 	
 // Constructor, destructor, and initializer
 public:
