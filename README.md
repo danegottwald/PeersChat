@@ -37,7 +37,7 @@ sudo make install
 ### Install for Arch Linux
 ```bash
 # Installing all libraries
-sudo pacman -S opus libopusenc portaudio gtk3
+sudo pacman -S opus portaudio gtk3
 ```
 
 To clone and run this repository, you will need [Git](https://git-scm.com/) and make.
