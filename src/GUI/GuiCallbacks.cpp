@@ -23,8 +23,8 @@ void host_button_callback(GtkWidget *widget, gpointer data)
 	gchar *port_text;
 	name_text = gh->get_child_entry_text(widget_box, "NameEntry");
 	port_text = gh->get_child_entry_text(widget_box, "PortEntry");
-	gh->set_user_port(port_text);
 	uint16_t port = (uint16_t) atoi(port_text);
+	g_print("PORT: %d\n", port);
 	if(port > 0)
 		PORT = port;
 	gh->set_user_name(name_text, gh->users.size());
