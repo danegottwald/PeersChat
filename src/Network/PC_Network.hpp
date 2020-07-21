@@ -436,6 +436,9 @@ public:
 	void disconnect() noexcept;
 	inline int getNumberPeers() { return this->size; }
 
+	inline void setIndirectJoin(bool x) noexcept { this->accept_indirect_join = x; }
+	inline void setDirectJoin(bool x) noexcept { this->accept_direct_join = x; }
+
 private:
 	bool start() noexcept;
 	void stop() noexcept;
