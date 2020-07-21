@@ -1,5 +1,6 @@
 #include <PC_Gui.hpp>
-#include <string.h>
+
+extern PeersChatNetwork *Network;
 
 
 // Constructor
@@ -87,6 +88,7 @@ void PC_GuiHandler::refresh_name_list()
 	add_user_to_session(user_name, FALSE);
 
 	// Add NPeers to name list based on their ID
+	this->users.clear();
 	int numPeers = Network->getNumberPeers();
 	for(int peer_index = 0; peer_index < numPeers; peer_index++)
 	{

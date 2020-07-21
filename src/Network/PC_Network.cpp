@@ -17,6 +17,7 @@ std::chrono::milliseconds PEERS_CHAT_DESTRUCT_TIMEOUT = 2s;
 std::chrono::milliseconds SOCKET_TIMEOUT = 5s;
 std::chrono::milliseconds PEER_TIMEOUT = 15s;
 uint16_t PORT = 8080;
+extern PC_GuiHandler *GUI;
 
 
 // Exceptions ----------------------------------------------------------------------------
@@ -669,6 +670,8 @@ void PeersChatNetwork::getNames() noexcept
 		this->peers[i]->setName(this->getName(NPeerAttorney::getTCP(this->peers[i].get())));
 		NPeerAttorney::destroyTCP(this->peers[i].get());
 	}
+
+	GUI->refresh_name_list();
 }
 
 

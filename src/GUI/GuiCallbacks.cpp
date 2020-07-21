@@ -1,6 +1,12 @@
 #include <GuiCallbacks.hpp>
 #include <string>
 
+
+// Extern Globals
+extern PeersChatNetwork *Network;
+extern APeer *Audio;
+
+
 /*
  *	PeersChar GUI Callback Functions
  *
@@ -130,11 +136,11 @@ void direct_checkmark_callback(GtkWidget *widget)
 	gboolean toggled = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	if(toggled)
 	{
-		g_print("Direct Joins Toggled\n");
+		Network->setIndirectJoin(true);
 	}
 	else
 	{
-		g_print("Direct Joins Untoggled\n");
+		Network->setIndirectJoin(false);
 	}
 }
 
@@ -144,11 +150,11 @@ void indirect_checkmark_callback(GtkWidget *widget)
 	gboolean toggled = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	if(toggled)
 	{
-		g_print("Indirect Joins Toggled\n");
+		Network->setDirectJoin(true);
 	}
 	else
 	{
-		g_print("Indirect Joins Untoggled\n");
+		Network->setDirectJoin(false);
 	}
 }
 

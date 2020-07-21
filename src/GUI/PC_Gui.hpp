@@ -14,6 +14,7 @@
 #include <PC_Network.hpp>
 #include <GuiCallbacks.hpp>
 #include <chrono>
+#include <string>
 #include <cinttypes>
 
 // Pre-Compiler Constants

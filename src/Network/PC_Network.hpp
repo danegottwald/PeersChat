@@ -106,6 +106,7 @@ static inline int close(int &x) { return closesocket(x); }
 #include <stdio.h>
 #include <errno.h>
 #include "nettypes.hpp"
+#include <PC_Gui.hpp>
 
 
 // Pre-Compiler Constants
