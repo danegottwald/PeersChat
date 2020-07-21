@@ -415,6 +415,7 @@ GtkWidget* PC_GuiHandler::create_volume_slider()
 	gtk_widget_set_vexpand(outputBox, TRUE);
 	
 	GtkWidget *outputVol = gtk_volume_button_new();
+	gtk_scale_button_set_value(GTK_SCALE_BUTTON(outputVol), DEFAULT_VOLUME_SLIDER_VALUE);
 	gtk_box_pack_end(GTK_BOX(outputBox), outputVol, TRUE, FALSE, 0);
 	g_signal_connect(outputVol, "value-changed", G_CALLBACK(volume_callback), this);
 

@@ -24,6 +24,8 @@
 #define DEFAULT_WINDOW_PADDING 32
 // Widget padding: pads between widgets
 #define DEFAULT_WIDGET_PADDING 16
+// Value that volume slider begins at (values in 0-1.0 range)
+#define DEFAULT_VOLUME_SLIDER_VALUE 0.5
 
 // Max name length: Cannot exceed # of characters
 #define MAX_NAME_LEN 18
