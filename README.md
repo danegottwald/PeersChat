@@ -9,7 +9,6 @@ PeersChat is a desktop application for people looking for temporary voice chatro
 * Change output volume
 * Mute other peers
 * Vote kick a peer the group doesn't like
-* Option for Command-Line Only mode
 
 Currently only supports Linux, with plans on becoming cross-platform!
 
