@@ -163,6 +163,8 @@ private:
 	bool entry_text_is_valid(gchar *entry_text);
 	GtkWidget* create_new_user_row(const gchar *name, bool is_host, bool kickable);
 	void setup_lobby(GtkWidget *parent, GtkWidget *lobby_box);
+	GtkWidget* create_volume_slider();
+	GtkWidget* create_indirect_join_toggle();
 	void show_error_popup(const gchar *message);
 	void username_popup();
 	

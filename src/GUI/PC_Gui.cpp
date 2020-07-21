@@ -389,28 +389,11 @@ void PC_GuiHandler::setup_lobby(GtkWidget *parent, GtkWidget *lobby_box)
 	gtk_box_pack_end(GTK_BOX(lobby_box), leave_button, FALSE, FALSE, 0);
 	g_signal_connect(leave_button, "clicked", G_CALLBACK(leave_button_callback), this);
 
-	GtkWidget *outputBox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, DEFAULT_WIDGET_PADDING);
-	gtk_widget_set_name(outputBox, "outputBox");
-	gtk_widget_set_vexpand(outputBox, TRUE);
-	gtk_box_pack_end(GTK_BOX(lobby_box), outputBox, FALSE, FALSE, 0);
+	GtkWidget *volumeSlider = create_volume_slider();
+	gtk_box_pack_end(GTK_BOX(lobby_box), volumeSlider, FALSE, FALSE, 0);
 	
-	GtkWidget *outputVol = gtk_volume_button_new();
-	gtk_box_pack_end(GTK_BOX(outputBox), outputVol, TRUE, FALSE, 0);
-	g_signal_connect(outputVol, "value-changed", G_CALLBACK(volume_callback), this);
-
-	GtkWidget *outputLabel = gtk_label_new((const gchar*) "Output Volume");
-	gtk_box_pack_end(GTK_BOX(outputBox), outputLabel, FALSE, FALSE, 0);
-	
-	GtkWidget *indirectBox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, DEFAULT_WIDGET_PADDING);
-	gtk_widget_set_vexpand(indirectBox, TRUE);
-	gtk_box_pack_end(GTK_BOX(lobby_box), indirectBox, FALSE, FALSE, 0);
-	
-	GtkWidget *indirectCheck = gtk_check_button_new();
-	gtk_box_pack_end(GTK_BOX(indirectBox), indirectCheck, TRUE, FALSE, 0);
-	g_signal_connect(indirectCheck, "clicked", G_CALLBACK(indirect_checkmark_callback), this);
-	
-	GtkWidget *indirectLabel = gtk_label_new((const gchar*) "Allow Indirect Joins");
-	gtk_box_pack_end(GTK_BOX(indirectBox), indirectLabel, FALSE, FALSE, 0);
+	GtkWidget *indirectToggle = create_indirect_join_toggle();
+	gtk_box_pack_end(GTK_BOX(lobby_box), indirectToggle, FALSE, FALSE, 0);
 	
 	if(is_host) 
 	{
@@ -423,6 +406,37 @@ void PC_GuiHandler::setup_lobby(GtkWidget *parent, GtkWidget *lobby_box)
 		//add_host_to_session("TestHost");
 	}
 	gtk_widget_show_all(lobby_box);
+}
+
+GtkWidget* PC_GuiHandler::create_volume_slider()
+{
+	GtkWidget *outputBox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, DEFAULT_WIDGET_PADDING);
+	gtk_widget_set_name(outputBox, "outputBox");
+	gtk_widget_set_vexpand(outputBox, TRUE);
+	
+	GtkWidget *outputVol = gtk_volume_button_new();
+	gtk_box_pack_end(GTK_BOX(outputBox), outputVol, TRUE, FALSE, 0);
+	g_signal_connect(outputVol, "value-changed", G_CALLBACK(volume_callback), this);
+
+	GtkWidget *outputLabel = gtk_label_new((const gchar*) "Output Volume");
+	gtk_box_pack_end(GTK_BOX(outputBox), outputLabel, FALSE, FALSE, 0);
+	
+	return outputBox;
+}
+
+GtkWidget* PC_GuiHandler::create_indirect_join_toggle()
+{
+	GtkWidget *indirectBox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, DEFAULT_WIDGET_PADDING);
+	gtk_widget_set_vexpand(indirectBox, TRUE);
+	
+	GtkWidget *indirectCheck = gtk_check_button_new();
+	gtk_box_pack_end(GTK_BOX(indirectBox), indirectCheck, TRUE, FALSE, 0);
+	g_signal_connect(indirectCheck, "clicked", G_CALLBACK(indirect_checkmark_callback), this);
+	
+	GtkWidget *indirectLabel = gtk_label_new((const gchar*) "Allow Indirect Joins");
+	gtk_box_pack_end(GTK_BOX(indirectBox), indirectLabel, FALSE, FALSE, 0);
+	
+	return indirectBox;
 }
 
 void PC_GuiHandler::show_error_popup(const gchar *message)
