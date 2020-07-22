@@ -187,6 +187,7 @@ bool NPeer::setName(std::string name) noexcept
 	}
 
 	std::strncpy(this->pname, name.c_str(), MAX_NAME_LEN);
+	GUI->refresh_name_list();
 	return true;
 }
 
@@ -1085,7 +1086,6 @@ std::string PeersChatNetwork::getName(int sock) noexcept
 	for(unsigned i = 0; i < buffer[1]; ++i)
 		name.push_back((char)buffer[2 + i]);
 
-	GUI->refresh_name_list();
 	return name;
 }
 
