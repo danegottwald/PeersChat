@@ -3,6 +3,8 @@
 
 #include <PC_Network.hpp>
 #include <PC_Gui.hpp>
+#include <memory>
+#include <thread>
 
 /*
  *	PeersChar GUI Callback Functions

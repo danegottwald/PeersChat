@@ -15,6 +15,8 @@
 #include <GuiCallbacks.hpp>
 #include <chrono>
 #include <string>
+#include <memory>
+#include <thread>
 #include <cinttypes>
 
 // Pre-Compiler Constants

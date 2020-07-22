@@ -6,6 +6,9 @@
 extern PeersChatNetwork *Network;
 extern APeer *Audio;
 
+// Speedup GUI Leave
+std::unique_ptr<std::thread> DISCONNECT_THREAD;
+
 
 /*
  *	PeersChar GUI Callback Functions
@@ -23,6 +26,9 @@ void activate_callback(GtkApplication *app, gpointer data)
 
 void host_button_callback(GtkWidget *widget, gpointer data) 
 {
+	if(DISCONNECT_THREAD.get() && DISCONNECT_THREAD->joinable())
+		DISCONNECT_THREAD->join();
+
 	PC_GuiHandler* gh = static_cast<PC_GuiHandler*>(data);
 	GtkWidget* widget_box = gh->get_widget_box();
 	
@@ -53,6 +59,9 @@ void host_button_callback(GtkWidget *widget, gpointer data)
 
 void join_button_callback(GtkWidget *widget, gpointer data) 
 {
+	if(DISCONNECT_THREAD.get() && DISCONNECT_THREAD->joinable())
+		DISCONNECT_THREAD->join();
+
 	PC_GuiHandler* gh = static_cast<PC_GuiHandler*>(data);
 	GtkWidget* widget_box = gh->get_widget_box();
 	
@@ -186,7 +195,9 @@ void leave_button_callback(GtkWidget *widget, gpointer data)
 
 	
 	// disconnect from network
+	if(DISCONNECT_THREAD.get() && DISCONNECT_THREAD->joinable())
+		DISCONNECT_THREAD->join();
+	DISCONNECT_THREAD.reset(new std::thread((void (PeersChatNetwork::*)(void))&PeersChatNetwork::disconnect, Network));
 	Audio->stopVoiceStream();
-	Network->disconnect();
 }
 

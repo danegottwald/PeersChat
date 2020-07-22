@@ -1,6 +1,7 @@
 #include <PC_Gui.hpp>
 
 extern PeersChatNetwork *Network;
+extern std::unique_ptr<std::thread> DISCONNECT_THREAD;
 
 
 // Constructor
@@ -26,6 +27,10 @@ PC_GuiHandler::PC_GuiHandler()
 // Destructor
 PC_GuiHandler::~PC_GuiHandler()
 {
+
+	// Optimize Leave Button Destructor
+	if(DISCONNECT_THREAD.get() && DISCONNECT_THREAD->joinable())
+		DISCONNECT_THREAD->join();
 }
 
 // Begins GUI event loop
