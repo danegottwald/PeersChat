@@ -1,4 +1,4 @@
-<img src="./Release Documents/images/PeersChat Icon.png" align="right" title="PeersChat Icon" alt="PeersChat Icon" style="height:150px;width:150" />
+<img src="./Release Documents/images/PeersChat Icon.png" align="right" title="PeersChat Icon" alt="PeersChat Icon" height="150" width="150" />
 
 # PeersChat
 
