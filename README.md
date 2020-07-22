@@ -1,3 +1,5 @@
+<img src="./Release Documents/images/PeersChat Icon.png" align="right" title="PeersChat Icon" alt="PeersChat Icon" style="height:150px;width:150" />
+
 # PeersChat
 
 PeersChat is a desktop application for people looking for temporary voice chatrooms. Host chatrooms, join and leave rooms easily, rooms are deleted when everyone leaves.
