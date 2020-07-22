@@ -488,7 +488,7 @@ GtkWidget* PC_GuiHandler::create_volume_slider()
 	gtk_box_pack_end(GTK_BOX(outputBox), outputVol, TRUE, FALSE, 0);
 	g_signal_connect(outputVol, "value-changed", G_CALLBACK(volume_callback), this);
 
-	GtkWidget *outputLabel = gtk_label_new((const gchar*) "Output Volume");
+	GtkWidget *outputLabel = gtk_label_new((const gchar*) "Output Volume          ");
 	gtk_box_pack_end(GTK_BOX(outputBox), outputLabel, FALSE, FALSE, 0);
 
 	return outputBox;
@@ -503,7 +503,7 @@ GtkWidget* PC_GuiHandler::create_direct_join_toggle()
 	gtk_box_pack_end(GTK_BOX(directBox), directCheck, TRUE, FALSE, 0);
 	g_signal_connect(directCheck, "clicked", G_CALLBACK(direct_checkmark_callback), this);
 
-	GtkWidget *directLabel = gtk_label_new((const gchar*) "Allow Direct Joins");
+	GtkWidget *directLabel = gtk_label_new((const gchar*) "Allow Direct Joins    ");
 	gtk_box_pack_end(GTK_BOX(directBox), directLabel, FALSE, FALSE, 0);
 
 	return directBox;
