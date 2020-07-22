@@ -17,7 +17,7 @@ APeer *Audio = NULL;
 PC_GuiHandler *GUI = NULL;
 
 int main(const int argc, char *argv[])
-{	
+{
 	// Create PeersChat Object
 	std::unique_ptr<PeersChat> pchat(new PeersChat);
 

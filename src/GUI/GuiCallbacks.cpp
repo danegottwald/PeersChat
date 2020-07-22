@@ -24,14 +24,14 @@ void activate_callback(GtkApplication *app, gpointer data)
 	gh->activate(app);
 }
 
-void host_button_callback(GtkWidget *widget, gpointer data) 
+void host_button_callback(GtkWidget *widget, gpointer data)
 {
 	if(DISCONNECT_THREAD.get() && DISCONNECT_THREAD->joinable())
 		DISCONNECT_THREAD->join();
 
 	PC_GuiHandler* gh = static_cast<PC_GuiHandler*>(data);
 	GtkWidget* widget_box = gh->get_widget_box();
-	
+
 	gchar *name_text;
 	gchar *port_text;
 	name_text = gh->get_child_entry_text(widget_box, "NameEntry");
@@ -57,14 +57,14 @@ void host_button_callback(GtkWidget *widget, gpointer data)
 	}
 }
 
-void join_button_callback(GtkWidget *widget, gpointer data) 
+void join_button_callback(GtkWidget *widget, gpointer data)
 {
 	if(DISCONNECT_THREAD.get() && DISCONNECT_THREAD->joinable())
 		DISCONNECT_THREAD->join();
 
 	PC_GuiHandler* gh = static_cast<PC_GuiHandler*>(data);
 	GtkWidget* widget_box = gh->get_widget_box();
-	
+
 	gchar *name_text;
 	gchar *link_text;
 	gchar *port_text;
@@ -76,7 +76,7 @@ void join_button_callback(GtkWidget *widget, gpointer data)
 	gh->set_user_link(link_text);
 	gh->set_user_port(port_text);
 
-	
+
 	// parse link_text for IP address and port
 	std::string str(link_text);
 	size_t pos = str.find_first_of(':', 0);
@@ -85,7 +85,7 @@ void join_button_callback(GtkWidget *widget, gpointer data)
 
 
 	// define socket address and join connection
-	sockaddr_in addr; 
+	sockaddr_in addr;
 	if (inet_pton(AF_INET, ip.c_str(), &addr.sin_addr) < 1)
 	{
 		printf("ERROR: IP Address String is not a valid IPv4 Address.\n");
@@ -110,9 +110,9 @@ void mute_button_callback(GtkWidget *widget, gpointer data)
 	gh->refresh_name_list();
 	GtkWidget* list_row = gtk_widget_get_parent(widget);
 	const gchar* id = gtk_widget_get_name(list_row);
-	
+
 	gboolean toggled = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
-	
+
 	if(strcmp(id, "UserRow") == 0)
 	{
 		if(toggled)
@@ -125,14 +125,14 @@ void mute_button_callback(GtkWidget *widget, gpointer data)
 		}
 		return;
 	}
-	
+
 	NPeer* mute_peer = gh->get_npeer(atoi(id));
 	if(mute_peer == NULL) {
 		printf("ERROR: Could not find user to mute\n");
 		return;
 	}
-	
-	
+
+
 	if(toggled)
 	{
 		mute_peer->setMute(true);
@@ -148,10 +148,10 @@ void kick_button_callback(GtkWidget *widget, gpointer data)
 	PC_GuiHandler* gh = static_cast<PC_GuiHandler*>(data);
 	GtkWidget* list_row = gtk_widget_get_parent(widget);
 	const gchar* name = gtk_widget_get_name(list_row);
-	
+
 	g_print("Kick Button Pressed\n");
 	g_print("Name of user: %s\n", name);
-	
+
 	gh->remove_name_from_session(name);
 }
 
@@ -188,13 +188,13 @@ void volume_callback(GtkVolumeButton *v1, gdouble value)
 	Audio->setOutputVolume(value);
 }
 
-void leave_button_callback(GtkWidget *widget, gpointer data) 
+void leave_button_callback(GtkWidget *widget, gpointer data)
 {
 	PC_GuiHandler* gh = static_cast<PC_GuiHandler*>(data);
 	GtkWidget* widget_box = gh->get_widget_box();
 	gh->leaveButtonPressed(widget, widget_box);
 
-	
+
 	// disconnect from network
 	if(DISCONNECT_THREAD.get() && DISCONNECT_THREAD->joinable())
 		DISCONNECT_THREAD->join();

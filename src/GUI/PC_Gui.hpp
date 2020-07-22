@@ -37,10 +37,10 @@
 class NPeer;
 
 // GuiHandler Class -----------------------------------------------------------------------
-/* GuiHandler: Class for encapsulating GUI functionality 
+/* GuiHandler: Class for encapsulating GUI functionality
  *
  * @member app  Pointer to the GtkApplication, a GTK+ object that automatically
- *              initializes GTK+ library and acts as entry point to GUI program. 
+ *              initializes GTK+ library and acts as entry point to GUI program.
  *
  * @member widget_box  Pointer to the primary GtkWidget container, used
  *                     in order to access GtkWidget data from callback functions
@@ -65,19 +65,19 @@ class NPeer;
  *
  * @method void add_host_to_session(1)  Adds a host to the GUI name_list for an ongoing
  *                                      session.
- *                                        @prereq: GUI is already running through runGui()  
+ *                                        @prereq: GUI is already running through runGui()
  *                                        @param name: User's name to be displayed
  *                                                     in session
  *
- * @method void add_user_to_session(1)  Adds a user (non-host) to the GUI name_list for an 
+ * @method void add_user_to_session(1)  Adds a user (non-host) to the GUI name_list for an
  *                                      ongoing session.
- *                                        @prereq: GUI is already running through runGui()  
+ *                                        @prereq: GUI is already running through runGui()
  *                                        @param name: User's name to be displayed
  *                                                     in session
  *
  * @method void remove_name_from_session(1)  Removes a user from the GUI name_list
  *                                           of an ongoing session.
- *                                             @prereq: GUI is already running through runGui()  
+ *                                             @prereq: GUI is already running through runGui()
  *                                             @param name: User's name to be removed
  *                                                          from session
  *
@@ -88,13 +88,13 @@ class NPeer;
  *                      the first window of GUI. In addition, sets up widgets and layout
  *                      of GUI.
  *
- * @method hostButtonPressed(2)  Callback function called when "Host Session" button 
+ * @method hostButtonPressed(2)  Callback function called when "Host Session" button
  *                               is pressed.
  *                                 @param widget: Pointer to widget that emitted signal
  *                                 @param gpointer: void* pointer to data being passed
  *                                                  into callback function.
- * 
- * @method joinButtonPressed(2)  Callback function called when "Join Session" button 
+ *
+ * @method joinButtonPressed(2)  Callback function called when "Join Session" button
  *                               is pressed.
  *                                 @param widget: Pointer to widget that emitted signal
  *                                 @param gpointer: void* pointer to data being passed
@@ -109,30 +109,30 @@ class NPeer;
  *                                @param gpointer: void* pointer to data being passed
  *                                                  into callback function
  *
- * @method leaveButtonPressed(2) Callback function called when "Leave Session" button 
+ * @method leaveButtonPressed(2) Callback function called when "Leave Session" button
  *                               is pressed.
  *                                 @param widget: Pointer to widget that emitted signal
  *                                 @param gpointer: void* pointer to data being passed
  *                                                  into callback function
  */
-class PC_GuiHandler 
+class PC_GuiHandler
 {
-	
+
 // Member Variables
 private:
 	GtkApplication *app;
 	GtkWidget *widget_box;
 	GtkWidget *name_list;
-	
+
 	gchar *user_name;
 	gchar *user_link;
 	gchar *user_port;
-	
+
 	bool is_host;
-	
+
 	std::vector<NPeer*> users;
-		
-	
+
+
 // Constructor, destructor, and initializer
 public:
 	PC_GuiHandler();
@@ -148,18 +148,18 @@ public:
 	void add_npeer_to_gui(NPeer* peer);
 	void remove_npeer_from_gui(NPeer* peer);
 	void refresh_name_list();
-	
+
 // Callback Functions
 	void activate(GtkApplication *app);
 	void hostButtonPressed(GtkWidget *widget, gpointer data);
 	void joinButtonPressed(GtkWidget *widget, gpointer data);
-	void leaveButtonPressed(GtkWidget *widget, gpointer data);	
+	void leaveButtonPressed(GtkWidget *widget, gpointer data);
 
 // Setters + Getters providing access for GuiCallbacks.cpp
 	GtkWidget* get_widget_by_name(GtkWidget *container, const gchar *widget_name);
 	gchar *get_child_entry_text(GtkWidget *container, const gchar *entry_name);
 	GtkWidget* get_widget_box();
-	
+
 	void set_user_name(gchar *entry_text);
 	gchar* get_user_name();
 	void set_user_link(gchar *entry_text);
@@ -168,7 +168,7 @@ public:
 	gchar* get_user_port();
 	NPeer* get_npeer(const gchar *peer_name);
 	NPeer* get_npeer(const int id);
-	
+
 // Utility Functions
 private:
 	void hide_all_child_widgets(GtkWidget *container);
@@ -181,7 +181,7 @@ private:
 	GtkWidget* create_indirect_join_toggle();
 	void show_error_popup(const gchar *message);
 	void username_popup();
-	
+
 };
 
 #endif

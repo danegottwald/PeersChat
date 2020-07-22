@@ -14,8 +14,8 @@
  */
 
 void activate_callback(GtkApplication *app, gpointer data);
-void host_button_callback(GtkWidget *widget, gpointer data); 
-void join_button_callback(GtkWidget *widget, gpointer data); 
+void host_button_callback(GtkWidget *widget, gpointer data);
+void join_button_callback(GtkWidget *widget, gpointer data);
 void mute_button_callback(GtkWidget *widget, gpointer data);
 void kick_button_callback(GtkWidget *widget, gpointer data);
 void direct_checkmark_callback(GtkWidget *widget);
@@ -23,6 +23,6 @@ void indirect_checkmark_callback(GtkWidget *widget);
 void volume_callback(GtkVolumeButton *v1, gdouble value);
 void leave_button_callback(GtkWidget *widget, gpointer data);
 
-#endif 
+#endif
 
 
