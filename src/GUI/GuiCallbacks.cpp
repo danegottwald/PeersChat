@@ -98,12 +98,13 @@ void join_button_callback(GtkWidget *widget, gpointer data)
 void mute_button_callback(GtkWidget *widget, gpointer data)
 {
 	PC_GuiHandler* gh = static_cast<PC_GuiHandler*>(data);
+	gh->refresh_name_list();
 	GtkWidget* list_row = gtk_widget_get_parent(widget);
-	const gchar* name = gtk_widget_get_name(list_row);
+	const gchar* id = gtk_widget_get_name(list_row);
 	
 	gboolean toggled = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	
-	if(strcmp(name, gh->get_user_name()) == 0)
+	if(strcmp(id, "UserRow") == 0)
 	{
 		if(toggled)
 		{
@@ -116,7 +117,7 @@ void mute_button_callback(GtkWidget *widget, gpointer data)
 		return;
 	}
 	
-	NPeer* mute_peer = gh->get_npeer(const_cast<gchar*>(name));
+	NPeer* mute_peer = gh->get_npeer(atoi(id));
 	if(mute_peer == NULL) {
 		printf("ERROR: Could not find user to mute\n");
 		return;
