@@ -130,7 +130,6 @@ private:
 	
 	bool is_host;
 	
-	// Maps user name -> NPeer*
 	std::vector<NPeer*> users;
 		
 	
@@ -142,7 +141,9 @@ public:
 
 // Public functions for managing user session GUI
 	void add_host_to_session(const gchar *name);
+	void add_self_to_session(const gchar *name);
 	void add_user_to_session(const gchar *name, bool kickable);
+	void add_user_to_session(const gchar *name, int id, bool kickable);
 	void remove_name_from_session(const gchar *name);
 	void add_npeer_to_gui(NPeer* peer);
 	void remove_npeer_from_gui(NPeer* peer);
@@ -166,12 +167,14 @@ public:
 	void set_user_port(gchar *entry_text);
 	gchar* get_user_port();
 	NPeer* get_npeer(const gchar *peer_name);
+	NPeer* get_npeer(const int id);
 	
 // Utility Functions
 private:
 	void hide_all_child_widgets(GtkWidget *container);
 	bool entry_text_is_valid(gchar *entry_text);
 	GtkWidget* create_new_user_row(const gchar *name, bool is_host, bool kickable);
+	void rename_user_row(GtkWidget* row, const gchar *name);
 	void setup_lobby(GtkWidget *parent, GtkWidget *lobby_box);
 	GtkWidget* create_volume_slider();
 	GtkWidget* create_direct_join_toggle();

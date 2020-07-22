@@ -54,9 +54,24 @@ void PC_GuiHandler::add_host_to_session(const gchar *name)
 	gtk_container_add(GTK_CONTAINER(name_list), new_row);
 }
 
+void PC_GuiHandler::add_self_to_session(const gchar *name)
+{
+	GtkWidget *new_row = create_new_user_row(name, FALSE, FALSE);
+	gtk_widget_set_name(new_row, "UserRow");
+	gtk_container_add(GTK_CONTAINER(name_list), new_row);
+}
+
 void PC_GuiHandler::add_user_to_session(const gchar *name, bool kickable)
 {
 	GtkWidget *new_row = create_new_user_row(name, FALSE, kickable);
+	gtk_container_add(GTK_CONTAINER(name_list), new_row);
+}
+
+void PC_GuiHandler::add_user_to_session(const gchar *name, int id, bool kickable)
+{
+	GtkWidget *new_row = create_new_user_row(name, FALSE, kickable);
+	std::string IDstr = std::to_string(id);
+	gtk_widget_set_name(new_row, IDstr.c_str());
 	gtk_container_add(GTK_CONTAINER(name_list), new_row);
 }
 
@@ -81,20 +96,19 @@ void PC_GuiHandler::remove_name_from_session(const gchar *name)
 
 void PC_GuiHandler::add_npeer_to_gui(NPeer* peer)
 {
-	g_print("Add npeer to gui called\n");
 	users.push_back(peer);
-	add_user_to_session(peer->getName().c_str(), FALSE);
+	add_user_to_session(peer->getName().c_str(), peer->getID(), FALSE);
 }
 
 void PC_GuiHandler::remove_npeer_from_gui(NPeer* peer)
 {
-	g_print("Remove npeer from gui called\n");
 	std::vector<NPeer*>::iterator users_iter;
 	for(users_iter = users.begin(); users_iter != users.end(); ++users_iter)
 	{
 		if(*users_iter == peer)
 		{
-			remove_name_from_session((peer->getName()).c_str());
+			const gchar *row_id = std::to_string(peer->getID()).c_str();
+			remove_name_from_session(row_id);
 			users.erase(users_iter);
 			break;
 		}
@@ -108,25 +122,22 @@ void PC_GuiHandler::refresh_name_list()
 	GList *list_rows = gtk_container_get_children(GTK_CONTAINER(name_list));
 	while(list_rows != NULL)
 	{
-		gtk_widget_destroy(GTK_WIDGET(list_rows->data));
-		list_rows = list_rows->next;
-	}
-	// Add self back to name list
-	add_user_to_session(user_name, FALSE);
-
-	// Refresh name list based on current name of NPeer
-	for(size_t user_index = 0; user_index < users.size(); ++user_index)
-	{
-		NPeer *current_peer = users[user_index];
-		if(current_peer == NULL) {
+		GtkWidget* current_row = gtk_bin_get_child(GTK_BIN(list_rows->data));
+		const gchar* row_id = gtk_widget_get_name(current_row);
+		
+		// Disregard User's Row
+		if(strcmp(row_id, "UserRow") == 0)
+		{
+			list_rows = list_rows->next;
 			continue;
 		}
-		gchar* peer_name = const_cast<gchar*>((current_peer->getName()).c_str());
 		
-		if(is_host)
-			add_user_to_session(peer_name, TRUE);
-		else 
-			add_user_to_session(peer_name, FALSE);
+		NPeer* id_peer = get_npeer(atoi(row_id));
+		
+		if(id_peer != NULL)
+			rename_user_row(current_row, (id_peer->getName()).c_str());
+			
+		list_rows = list_rows->next;
 	}
 	
 	gtk_widget_show_all(name_list);
@@ -353,6 +364,22 @@ NPeer* PC_GuiHandler::get_npeer(const gchar *peer_name)
 	return return_peer;
 }
 
+NPeer* PC_GuiHandler::get_npeer(const int id)
+{
+	NPeer* return_peer = NULL;
+	for(size_t user_index = 0; user_index < users.size(); ++user_index)
+	{
+		NPeer* current_peer = users[user_index];
+		const int current_id = current_peer->getID();
+		if(id == current_id)
+		{
+			return_peer = current_peer;
+			break;
+		}
+	}
+	return return_peer;
+}
+
 // Private Utility Functions
 
 void PC_GuiHandler::hide_all_child_widgets(GtkWidget *container)
@@ -379,7 +406,6 @@ GtkWidget* PC_GuiHandler::create_new_user_row(const gchar *name, bool is_host, b
 	GtkWidget *mute_button;
 	
 	new_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-	gtk_widget_set_name(new_row, name);
 	
 	name_label = gtk_label_new(NULL);
 	if(is_host)
@@ -413,6 +439,12 @@ GtkWidget* PC_GuiHandler::create_new_user_row(const gchar *name, bool is_host, b
 	return new_row;
 }
 
+void PC_GuiHandler::rename_user_row(GtkWidget* row, const gchar* name)
+{
+	GtkWidget* row_label = get_widget_by_name(row, "row_name");
+	gtk_label_set_text(GTK_LABEL(row_label), name);
+}
+
 void PC_GuiHandler::setup_lobby(GtkWidget *parent, GtkWidget *lobby_box)
 {
 	hide_all_child_widgets(GTK_WIDGET(parent));
@@ -442,16 +474,8 @@ void PC_GuiHandler::setup_lobby(GtkWidget *parent, GtkWidget *lobby_box)
 	GtkWidget *directToggle = create_direct_join_toggle();
 	gtk_box_pack_end(GTK_BOX(lobby_box), directToggle, FALSE, FALSE, 0);
 	
-	if(is_host) 
-	{
-		add_host_to_session(user_name);
-		//add_user_to_session("TestUser", TRUE);
-	}
-	else
-	{
-		add_user_to_session(user_name, FALSE);
-		//add_host_to_session("TestHost");
-	}
+	add_self_to_session(user_name);
+	
 	gtk_widget_show_all(lobby_box);
 }
 
