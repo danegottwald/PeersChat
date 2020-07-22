@@ -96,6 +96,7 @@ void PC_GuiHandler::remove_name_from_session(const gchar *name)
 
 void PC_GuiHandler::add_npeer_to_gui(NPeer* peer)
 {
+	g_print("Npeer added to gui\n");
 	users.push_back(peer);
 	add_user_to_session(peer->getName().c_str(), peer->getID(), FALSE);
 }
@@ -117,8 +118,7 @@ void PC_GuiHandler::remove_npeer_from_gui(NPeer* peer)
 
 void PC_GuiHandler::refresh_name_list()
 {
-	g_print("Refresh name list called\n");
-	// Clear current name list
+	g_print("Refreshed name list\n");
 	GList *list_rows = gtk_container_get_children(GTK_CONTAINER(name_list));
 	while(list_rows != NULL)
 	{
@@ -219,7 +219,6 @@ void PC_GuiHandler::hostButtonPressed(GtkWidget *widget, gpointer data)
 
 	else
 	{
-		//set_user_name(name_text, users.size());
 
 		is_host = TRUE;
 
@@ -233,10 +232,8 @@ void PC_GuiHandler::joinButtonPressed(GtkWidget *widget, gpointer data)
 	g_return_if_fail(GTK_IS_BUTTON(widget));
 
 	gchar *name_text;
-	gchar *link_text;
 
 	name_text = get_user_name();
-	link_text = get_user_link();
 
 	if(!entry_text_is_valid(name_text) || strlen(name_text) < 1)
 	{
@@ -244,13 +241,12 @@ void PC_GuiHandler::joinButtonPressed(GtkWidget *widget, gpointer data)
 	}
 	else
 	{
-		//set_user_name(name_text, users.size());
-		set_user_link(link_text);
 
 		is_host = FALSE;
 
 		GtkWidget *lobby_box = NULL;
 		setup_lobby(GTK_WIDGET(data), lobby_box);
+		
 	}
 }
 
@@ -447,6 +443,8 @@ void PC_GuiHandler::rename_user_row(GtkWidget* row, const gchar* name)
 
 void PC_GuiHandler::setup_lobby(GtkWidget *parent, GtkWidget *lobby_box)
 {
+	g_print("Setup lobby called\n");	
+	
 	hide_all_child_widgets(GTK_WIDGET(parent));
 	lobby_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, DEFAULT_WIDGET_PADDING);
 	gtk_widget_set_name(lobby_box, "LobbyBox");

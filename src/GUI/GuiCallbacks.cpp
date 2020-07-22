@@ -42,6 +42,13 @@ void host_button_callback(GtkWidget *widget, gpointer data)
 	gh->set_user_name(name_text);
 	Network->setMyName(name_text);
 
+	// Set name list, check to make sure it was created
+	gh->hostButtonPressed(widget, widget_box);
+	if(!gh->name_list_created())
+	{
+		return;
+	}
+
 	// host network
 	if (Network->host() != TRUE)
 	{
@@ -51,7 +58,6 @@ void host_button_callback(GtkWidget *widget, gpointer data)
 	else
 	{
 		// start audio library
-		gh->hostButtonPressed(widget, widget_box);
 		Audio->startVoiceStream();
 		std::cout << "Hosting Successful, Starting Voice Stream" << std::endl;
 	}
@@ -76,13 +82,17 @@ void join_button_callback(GtkWidget *widget, gpointer data)
 	gh->set_user_link(link_text);
 	gh->set_user_port(port_text);
 
-
+	// Set up name list, check to make sure it was created
+	gh->joinButtonPressed(widget, widget_box);
+	if(!gh->name_list_created())
+	{
+		return;
+	}
 	// parse link_text for IP address and port
 	std::string str(link_text);
 	size_t pos = str.find_first_of(':', 0);
 	std::string ip = str.substr(0, pos);
 	std::string host_port = str.substr(pos + 1, 10);
-
 
 	// define socket address and join connection
 	sockaddr_in addr;
@@ -100,7 +110,6 @@ void join_button_callback(GtkWidget *widget, gpointer data)
 	{
 		// start audio library
 		Audio->startVoiceStream();
-		gh->joinButtonPressed(widget, widget_box);
 	}
 }
 
@@ -160,11 +169,11 @@ void direct_checkmark_callback(GtkWidget *widget)
 	gboolean toggled = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	if(toggled)
 	{
-		Network->setIndirectJoin(true);
+		Network->setDirectJoin(true);
 	}
 	else
 	{
-		Network->setIndirectJoin(false);
+		Network->setDirectJoin(false);
 	}
 }
 
@@ -174,11 +183,11 @@ void indirect_checkmark_callback(GtkWidget *widget)
 	gboolean toggled = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 	if(toggled)
 	{
-		Network->setDirectJoin(true);
+		Network->setIndirectJoin(true);
 	}
 	else
 	{
-		Network->setDirectJoin(false);
+		Network->setIndirectJoin(false);
 	}
 }
 

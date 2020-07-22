@@ -148,6 +148,7 @@ public:
 	void add_npeer_to_gui(NPeer* peer);
 	void remove_npeer_from_gui(NPeer* peer);
 	void refresh_name_list();
+	inline bool name_list_created() { return this->name_list != NULL; }
 
 // Callback Functions
 	void activate(GtkApplication *app);
