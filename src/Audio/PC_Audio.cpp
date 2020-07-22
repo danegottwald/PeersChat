@@ -15,8 +15,7 @@ float APeer::outputVolume = 0.5f;
 bool APeer::micMute = false;
 bool APeer::deafen = false;
 
-NPeer network;
-PeersChatNetwork *pcn;
+extern PeersChatNetwork *Network;
 
 /* APeer Constructor
  * Initialize PortAudio, set default devices, create an encoder and decoder
@@ -35,7 +34,7 @@ APeer::APeer() {
 	                                      SAMPLE_RATE,
 	                                      FRAME_SIZE,
 	                                      Pa_Callback,
-	                                      &network);
+	                                      Network);
 	Pa_ErrorCheck("Failed to open audio stream", portaudioError, true);
 	// Check default devices
 	defaultInput = Pa_GetDeviceInfo(Pa_GetDefaultInputDevice())->name;
@@ -87,59 +86,75 @@ int APeer::Pa_Callback(const void *input,
                        unsigned long framesPerBuffer,
                        const PaStreamCallbackTimeInfo *timeInfo,
                        PaStreamCallbackFlags status_flags,
-                       void *userData) {
-	auto *net = (NPeer*) userData;
-	auto *in = (float *) input;
-	auto *out = (float *) output;
-	if (inputVolume != 1.0f && (inputVolume > 0 && inputVolume <= 1.5f)) {
-		for (unsigned int i = 0; i < framesPerBuffer; ++i) {
+                       void *userData)
+{
+	// Buffer For Audio Out
+	static uint8_t buffer[BUFFER_SIZE];
+	uint32_t buffer_len = 0;
+
+	// Cast to correct type
+	float *in = (float *) input;
+	float *out = (float *) output;
+
+	// Mic Input Volume Multiplier
+	if(micMute)
+	{
+		std::memset((void*) in, 0, sizeof(float) * framesPerBuffer);
+	}
+	else if (inputVolume < 0.98f || inputVolume > 1.02f)
+	{
+		for (unsigned int i = 0; i < framesPerBuffer; ++i)
 			in[i] *= inputVolume;
-		}
 	}
 
-	AudioOutPacket *outPacket = net->getEmptyOutPacket();
-	if (!micMute || inputVolume != 0) {
-		outPacket->packet_len = opus_encode_float(encoder,
-		                                          in,
-		                                          FRAME_SIZE,
-		                                          outPacket->packet.get(),
-		                                          BUFFER_SIZE);
-		#ifdef AUDIO_DEBUG
-		opus_error_check("Failed to encode frame", outPacket->packet_len, true);
-		#endif
-		net->enqueue_out(outPacket);
-	}
+	// Encode Audio Into Opus Packet and Store into Buffer
+	buffer_len = opus_encode_float(encoder, in, FRAME_SIZE, buffer, BUFFER_SIZE);
+	#ifdef AUDIO_DEBUG
+	opus_error_check("Failed to encode frame", buffer_len, true);
+	#endif
 
-	for (int i = 0; i < pcn->getNumberPeers(); i++) {
-		NPeer *peer = (*pcn)[i];
+	// Clear Output Buffer If it isn't getting filled with more data
+	if(Network->getNumberPeers() == 0 || deafen)
+		std::memset((void*) out, 0, sizeof(float) * framesPerBuffer);
+
+	// Send/Retrieve Data From Peers
+	for (int i = 0; i < Network->getNumberPeers(); i++)
+	{
+		NPeer *peer = (*Network)[i];
+
+		// Give Peer Copy of Output Audio
+		std::unique_ptr<AudioOutPacket> out_pack(peer->getEmptyOutPacket());
+		std::memcpy(out_pack->packet.get(), buffer, buffer_len);
+		out_pack->packet_len = buffer_len;
+		peer->enqueue_out(out_pack.release());
+
+		// Get Audio From Peer
 		uint32_t lastPacketID = peer->getInPacketId();
-		AudioInPacket *inPacket = peer->getAudioInPacket();
-		if (inPacket != nullptr) {
-			PACKETS_LOST += inPacket->packet_id - lastPacketID - 1;
-			TOTAL_PACKETS = inPacket->packet_id;
-			if (!deafen) {  // May cause port audio to continuously play last packet, needs testing, check else
-				int decodedFrame = opus_decode_float(decoder,
-				                                     inPacket->packet.get(),
-				                                     inPacket->packet_len,
-				                                     out,
-				                                     FRAME_SIZE,
-				                                     0);
-				#ifdef AUDIO_DEBUG
-				opus_error_check("Failed to decode frame", decodedFrame, false);
-				#endif
-			}
-			else {
-				out = nullptr;
-			}
-			peer->retireEmptyInPacket(inPacket);
-			if ((!deafen && outputVolume != 1.0f)
-			    && (outputVolume >= 0 && outputVolume <= 2.0f)) {
-				for (unsigned int j = 0; j < framesPerBuffer; ++j) {
-					out[i] *= outputVolume;
-				}
-			}
+		std::unique_ptr<AudioInPacket> inPacket(peer->getAudioInPacket());
+		if (inPacket.get() == nullptr) continue;
+
+		// Gather Packet Loss Statistics
+		PACKETS_LOST += inPacket->packet_id - lastPacketID - 1;
+		TOTAL_PACKETS = inPacket->packet_id;
+
+		// Decode Audio Input
+		if(deafen)
+		{
+			peer->retireEmptyInPacket(inPacket.release());
+			continue;
 		}
+
+		int decodedFrame = opus_decode_float(decoder, inPacket->packet.get(), inPacket->packet_len, out, FRAME_SIZE, 0);
+		#ifdef AUDIO_DEBUG
+		opus_error_check("Failed to decode frame", decodedFrame, false);
+		#endif
+		peer->retireEmptyInPacket(inPacket.release());
 	}
+
+	// Apply Output Volume Multiplier
+	if(!deafen && (Network->getNumberPeers() > 0) && (outputVolume < 0.98f || outputVolume > 1.02f))
+		for(unsigned int j = 0; j < framesPerBuffer; ++j)
+			out[j] *= outputVolume;
 	return 0;
 }
 

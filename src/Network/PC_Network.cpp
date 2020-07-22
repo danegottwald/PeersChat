@@ -17,6 +17,7 @@ std::chrono::milliseconds PEERS_CHAT_DESTRUCT_TIMEOUT = 2s;
 std::chrono::milliseconds SOCKET_TIMEOUT = 5s;
 std::chrono::milliseconds PEER_TIMEOUT = 15s;
 uint16_t PORT = 8080;
+extern PC_GuiHandler *GUI;
 
 
 // Exceptions ----------------------------------------------------------------------------
@@ -122,12 +123,14 @@ struct TCPServerCreateFail : std::exception {
  */
 // Static Initialization
 int NPeer::udp = -1;
+int NPeer::id_counter = 1;
 
 
 // Constructor
 NPeer::NPeer() noexcept : in_packets(AudioInPacket_greater)
 {
 	this->pname[0] = 0;
+	this->ID = NPeer::id_counter++;
 	std::memset((void*)&(this->destination), 0, sizeof(sockaddr_in));
 	destination.sin_family = AF_INET;
 	if(udp < 0)
@@ -183,7 +186,8 @@ bool NPeer::setName(std::string name) noexcept
 			return false;
 	}
 
-	std::strncpy(this->pname, name.c_str(), MAX_NAME_LEN+1);
+	std::strncpy(this->pname, name.c_str(), MAX_NAME_LEN);
+	GUI->refresh_name_list();
 	return true;
 }
 
@@ -207,7 +211,7 @@ AudioOutPacket* NPeer::getEmptyOutPacket() noexcept
 }
 
 
-void NPeer::enqueue_out(AudioOutPacket * &packet)
+void NPeer::enqueue_out(AudioOutPacket *packet)
 {
 	if(!packet) throw NullPtr();
 	else if(packet->packet_len == 0) throw EmptyPack();
@@ -235,8 +239,8 @@ void NPeer::startNetStream() noexcept
 void NPeer::stopNetStream() noexcept
 {
 	run_thread = false;
-	std::this_thread::sleep_for(PEERS_CHAT_DESTRUCT_TIMEOUT);
-	audio_out_thread.reset();
+	if(audio_out_thread.get() && audio_out_thread->joinable())
+		audio_out_thread->join();
 }
 
 
@@ -259,13 +263,11 @@ AudioInPacket* NPeer::getEmptyInPacket() noexcept
 }
 
 
-void NPeer::retireEmptyInPacket(AudioInPacket * &packet) noexcept
+void NPeer::retireEmptyInPacket(AudioInPacket *packet) noexcept
 {
 	in_bucket_lock.lock();
 	in_bucket.emplace(packet);
 	in_bucket_lock.unlock();
-
-	packet = NULL;
 }
 
 
@@ -335,6 +337,18 @@ bool NPeer::create_udp_socket() noexcept
 		return false;
 	}
 
+	// Create Timeval based on Timeout
+	timeval timeout;
+	std::chrono::seconds     sec = (std::chrono::duration_cast<seconds>(SOCKET_TIMEOUT));
+	std::chrono::microseconds us = (std::chrono::duration_cast<microseconds>(SOCKET_TIMEOUT)) - sec;
+	timeout.tv_sec  = sec.count();
+	timeout.tv_usec =  us.count();
+
+	// Set Timeout
+	if(setsockopt(udp, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0)
+		return false;
+
+
 	// Bind UDP
 	sockaddr_in addr;
 	addr.sin_family = AF_INET;
@@ -342,7 +356,8 @@ bool NPeer::create_udp_socket() noexcept
 	addr.sin_port = htons(PORT);
 	if(bind(udp, (sockaddr*) &addr, sizeof(addr)) < 0)
 	{
-		perror("NPeer::create_udp_socket() bind(): ");
+		perror("NPeer::create_udp_socket() bind()");
+		fprintf(stderr, "Failed on port %" PRIu16 "\n", ntohs(addr.sin_port));
 		return false;
 	}
 
@@ -366,13 +381,11 @@ AudioOutPacket* NPeer::getAudioOutPacket() noexcept
 }
 
 
-void NPeer::retireEmptyOutPacket(AudioOutPacket * &packet) noexcept
+void NPeer::retireEmptyOutPacket(AudioOutPacket *packet) noexcept
 {
 	out_bucket_lock.lock();
 	out_bucket.emplace(packet);
 	out_bucket_lock.unlock();
-
-	packet = NULL;
 }
 
 
@@ -422,15 +435,15 @@ void NPeer::send_audio_over_network_thread() noexcept
 
 		// Send
 		packet->packet_len += SENDV_SIZE;
-		__attribute__((unused)) ssize_t sent = sendto(udp, packet->packet.get(),
-		                                              packet->packet_len, 0,
+		ssize_t sent = sendto(udp, buffer, packet->packet_len + SENDV_SIZE, 0,
 		                                              (const sockaddr*) &destination, sizeof(destination));
 		#ifdef NET_DEBUG
-		if(sent != packet->packet_len)
+		if(sent != packet->packet_len + SENDV_SIZE)
 		{
 			std::cerr << "NPeer Audio Out Thread WARNING: Bytes Sent( " << sent << ") != Bytes Intended(" << packet->packet_len << ")\n";
 		}
 		#endif
+
 	}
 }
 
@@ -440,14 +453,14 @@ bool NPeer::createTCP()
 	if((this->tcp = socket(AF_INET, SOCK_STREAM, 0)) < 0)
 		return false;
 
-	if(connect(this->tcp, (sockaddr*) &destination, sizeof(this->destination)) < 0)
-	{
-		destroyTCP();
-		return false;
-	}
+	// Create Timeval based on Timeout
+	timeval timeout;
+	std::chrono::seconds     sec = (std::chrono::duration_cast<seconds>(SOCKET_TIMEOUT));
+	std::chrono::microseconds us = (std::chrono::duration_cast<microseconds>(SOCKET_TIMEOUT)) - sec;
+	timeout.tv_sec  = sec.count();
+	timeout.tv_usec =  us.count();
 
 	// Set Timeout
-	int64_t timeout = (std::chrono::duration_cast<milliseconds>(SOCKET_TIMEOUT)).count();
 	if(setsockopt(this->tcp, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)) < 0)
 	{
 		destroyTCP();
@@ -458,6 +471,14 @@ bool NPeer::createTCP()
 		destroyTCP();
 		return false;
 	}
+
+	// Connect to Peer
+	if(connect(this->tcp, (sockaddr*) &destination, sizeof(this->destination)) < 0)
+	{
+		destroyTCP();
+		return false;
+	}
+
 
 	return true;
 }
@@ -524,12 +545,23 @@ NPeer* PeersChatNetwork::operator[](const std::string &x) noexcept
 	NPeer* ret = NULL;
 	std::lock_guard<std::mutex> lock(this->peers_lock);
 	for(int i = 0; i < this->size; ++i)
+	{
 		if(ret && (peers[i]->getName() == x))
 			return NULL;
 		else if(!ret && (peers[i]->getName() == x))
 			ret = peers[i].get();
+	}
 
 	return ret;
+}
+
+NPeer* PeersChatNetwork::findID(const int &x) noexcept
+{
+	std::lock_guard<std::mutex> lock(this->peers_lock);
+	for(int i = 0; i < this->size; ++i)
+		if(this->peers[i]->getID() == x)
+			return this->peers[i].get();
+	return NULL;
 }
 
 
@@ -565,6 +597,14 @@ bool PeersChatNetwork::setMyName(const std::string &name) noexcept
 // Public Functions
 bool PeersChatNetwork::join(const sockaddr_in &addr) noexcept
 {
+	#ifdef NET_DEBUG
+	std::cout << "Call to PeersChatNetwork::join with addr ";
+	char buffer[INET_ADDRSTRLEN+1] = {0};
+	inet_ntop(AF_INET, &addr.sin_addr, buffer, INET_ADDRSTRLEN);
+	std::cout << std::string(buffer) << ":" << ntohs(addr.sin_port) << std::endl;
+	#endif
+
+
 	// Make sure everything is stopped first
 	if(running) return false;
 	this->stop();
@@ -573,12 +613,13 @@ bool PeersChatNetwork::join(const sockaddr_in &addr) noexcept
 	// Create NPeer
 	addPeer(addr);
 	NPeer *peer = (*this)[addr];
+	if(!peer) return false;
 
 	// Create TCP Connection to Peer
 	if(!NPeerAttorney::createTCP(peer))
 	{
-		return false;
 		this->stop();
+		return false;
 	}
 
 	// Get TCP socket
@@ -603,6 +644,10 @@ bool PeersChatNetwork::join(const sockaddr_in &addr) noexcept
 	// Close Out TCP Connection
 	NPeerAttorney::destroyTCP(peer);
 
+
+	#ifdef NET_DEBUG
+	std::cout << "Call to PeersChatNetwork::join completed" << std::endl;
+	#endif
 
 	// Start or fail sucessfully
 	if(this->start())
@@ -638,6 +683,10 @@ bool PeersChatNetwork::host() noexcept
 
 void PeersChatNetwork::disconnect() noexcept
 {
+	#ifdef NET_DEBUG
+	std::cout << "Call to PeersChatNetwork::disconnect()" << std::endl;
+	#endif
+
 	{
 		std::lock_guard<std::mutex> lock(this->peers_lock);
 
@@ -657,11 +706,19 @@ void PeersChatNetwork::disconnect() noexcept
 
 	// End it All
 	this->stop();
+
+	#ifdef NET_DEBUG
+	std::cout << "Call to PeersChatNetwork::disconnect() completed" << std::endl;
+	#endif
 }
 
 
 bool PeersChatNetwork::start() noexcept
 {
+	#ifdef NET_DEBUG
+	std::cout << "Call to PeersChatNetwork::start()" << std::endl;
+	#endif
+
 	// Create TCP Server Socket
 	if(tcp_listen > 0)
 		close(tcp_listen);
@@ -669,13 +726,19 @@ bool PeersChatNetwork::start() noexcept
 	// Sock Create
 	if((tcp_listen = socket(AF_INET, SOCK_STREAM, 0)) <= 0)
 	{
-		perror("PeersChatNetwork::start() socket(): ");
+		perror("PeersChatNetwork::start() socket()");
 		stop();
 		return false;
 	}
 
+	// Create TimeVal Struct
+	timeval timeout;
+	std::chrono::seconds     sec = (std::chrono::duration_cast<seconds>(SOCKET_TIMEOUT));
+	std::chrono::microseconds us = (std::chrono::duration_cast<microseconds>(SOCKET_TIMEOUT)) - sec;
+	timeout.tv_sec  = sec.count();
+	timeout.tv_usec =  us.count();
+
 	// Set Timeout
-	int64_t timeout = (std::chrono::duration_cast<milliseconds>(SOCKET_TIMEOUT)).count();
 	if(setsockopt(tcp_listen, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)) < 0)
 	{
 		perror("PeersChatNetwork::start() Failed to set send timeout");
@@ -689,6 +752,15 @@ bool PeersChatNetwork::start() noexcept
 		return false;
 	}
 
+	// Set re-use PORT/ADDR
+	int enable = 1;
+	if(setsockopt(tcp_listen, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable)) < 0)
+	{
+		perror("PeersChatNetwork::start() Failed to set SO_REUSEADDR");
+		stop();
+		return false;
+	}
+
 	// Sock Bind
 	sockaddr_in addr;
 	addr.sin_family = AF_INET;
@@ -696,7 +768,8 @@ bool PeersChatNetwork::start() noexcept
 	addr.sin_port = htons(PORT);
 	if(bind(tcp_listen, (sockaddr*) &addr, sizeof(addr)) < 0)
 	{
-		perror("PeersChatNetwork::start() bind(): ");
+		perror("PeersChatNetwork::start() bind()");
+		fprintf(stderr, "Failed on port %" PRIu16 "\n", ntohs(addr.sin_port));
 		stop();
 		return false;
 	}
@@ -704,7 +777,7 @@ bool PeersChatNetwork::start() noexcept
 	// Sock Listen
 	if(listen(tcp_listen, MAX_PEERS + 1) < 0)
 	{
-		perror("PeersChatNetwork::start() listen(): ");
+		perror("PeersChatNetwork::start() listen()");
 		stop();
 		return false;
 	}
@@ -716,6 +789,11 @@ bool PeersChatNetwork::start() noexcept
 	recv_thread.reset(new std::thread(&PeersChatNetwork::receive_audio_thread, this));
 	for(std::unique_ptr<NPeer> &ptr : this->peers)
 		ptr->startNetStream();
+
+	#ifdef NET_DEBUG
+	std::cout << "Call to PeersChatNetwork::start() completed" << std::endl;
+	#endif
+
 	return true;
 }
 
@@ -725,18 +803,27 @@ void PeersChatNetwork::stop() noexcept
 	#ifdef NET_DEBUG
 	std::cout << "Call to PeersChatNetwork::stop()" << std::endl;
 	#endif
+
 	std::lock_guard<std::mutex> lock(peers_lock);
 	running = false;
 
 	this->peers.clear();
+	this->size = 0;
 
-	if((recv_thread.get() && recv_thread->joinable()) || (listen_thread.get() && listen_thread->joinable()))
-		std::this_thread::sleep_for(PEERS_CHAT_DESTRUCT_TIMEOUT);
-	recv_thread.reset();
-	listen_thread.reset();
+	NPeerAttorney::destroyUDP();
+
+	if((recv_thread.get() && recv_thread->joinable()))
+		recv_thread->join();
+
+	if(listen_thread.get() && listen_thread->joinable())
+		listen_thread->join();
 
 	if(tcp_listen > 0) close(tcp_listen);
 	tcp_listen = -1;
+
+	recv_thread.reset();
+	listen_thread.reset();
+
 	#ifdef NET_DEBUG
 	std::cout << "Call to PeersChatNetwork::stop() completed" << std::endl;
 	#endif
@@ -804,10 +891,14 @@ bool PeersChatNetwork::addPeer(const sockaddr_in &addr) noexcept
 	NPeer *peer = new NPeer(addr);
 	if(running) peer->startNetStream();
 
-	std::lock_guard<std::mutex> lock(this->peers_lock);
-	if(this->size >= MAX_PEERS) return false;
-	this->peers.emplace_back(peer);
-	this->size++;
+	{
+		std::lock_guard<std::mutex> lock(this->peers_lock);
+		if(this->size >= MAX_PEERS) return false;
+		this->peers.emplace_back(peer);
+		this->size++;
+	}
+
+	GUI->add_npeer_to_gui(peer);
 	return true;
 }
 
@@ -830,7 +921,8 @@ void PeersChatNetwork::removePeer(sockaddr_in &addr) noexcept
 			(peers[loc]).swap(peers[peers.size()-1]);
 	}
 
-	// Eliminate Them
+	// Inform GUI and Eliminate Them
+	GUI->remove_npeer_from_gui(this->peers.back().get());
 	this->peers.pop_back();
 }
 
@@ -926,7 +1018,7 @@ void PeersChatNetwork::sendPeers(int sock)
 			pos += 6;
 		}
 	}
-	__attribute__((unused)) ssize_t size = send_timeout(sock, buffer, content_length + 5, MSG_NOSIGNAL);
+	ssize_t size = send_timeout(sock, buffer, content_length + 5, MSG_NOSIGNAL);
 	#ifdef NET_DEBUG
 	if(size != pos || pos != (content_length + 5))
 		std::cerr << "PeersChatNetwork::sendPeers() ERROR: Sent Incorrect amount of data" << std::endl;
@@ -991,8 +1083,8 @@ std::string PeersChatNetwork::getName(int sock) noexcept
 
 	// Parse Name
 	std::string name = "";
-	for(unsigned i = 0; i < buffer[2]; ++i)
-		name.push_back((char)buffer[3 + i]);
+	for(unsigned i = 0; i < buffer[1]; ++i)
+		name.push_back((char)buffer[2 + i]);
 
 	return name;
 }
@@ -1004,13 +1096,14 @@ void PeersChatNetwork::receive_audio_thread()
 
 	ssize_t r = 0;
 	sockaddr_in addr;
+	socklen_t addr_size = sizeof(addr);
 	while(running)
 	{
 		memset(&addr, 0, sizeof(addr));
 
 		// Receive Packet
 		r = recvfrom(NPeerAttorney::getUDP(), buffer, BUFFER_SIZE,
-		             MSG_WAITALL, (sockaddr*) &addr, (socklen_t*) sizeof(addr));
+		             MSG_WAITALL, (sockaddr*) &addr, &addr_size);
 		if(r < 0) continue;
 		if(buffer[0] != SENDV) continue;
 
@@ -1025,6 +1118,9 @@ void PeersChatNetwork::receive_audio_thread()
 			#endif
 			continue;
 		}
+
+		// Peer is Muted
+		if(peer->getMute()) continue;
 
 		// Get Empty Packet
 		std::unique_ptr<AudioInPacket> pack(peer->getEmptyInPacket());
@@ -1045,15 +1141,18 @@ void PeersChatNetwork::listen_on_tcp_thread()
 	int peer = -1;
 	uint8_t buffer[BUFFER_SIZE];
 	sockaddr_in addr;
+	socklen_t addr_size = sizeof(addr);
 	while(running)
 	{
 		if(peer > 0) close(peer);
 		peer = -1;
 
 		// Accept connection
-		if((peer = accept(tcp_listen, (sockaddr*) &addr, (socklen_t*) sizeof(addr))) < 0)
+		std::memset((void*) &addr, 0, addr_size);
+		if((peer = accept(tcp_listen, (sockaddr*) &addr, &addr_size)) < 0)
 		{
-			perror("PeersChatNetwork::listen_on_tcp_thread() accept: ");
+			if(errno == EAGAIN) continue;
+			perror("PeersChatNetwork::listen_on_tcp_thread() accept");
 			continue;
 		}
 
@@ -1068,26 +1167,33 @@ void PeersChatNetwork::listen_on_tcp_thread()
 			#ifdef NET_DEBUG
 			inet_ntop(AF_INET, &addr.sin_addr, (char*)buffer, 50);
 			printf("CONNECT Request from %s:%" PRIu16 "\n", buffer, ntohs(addr.sin_port));
-			connectFulfill(peer, addr);
 			#endif
+			connectFulfill(peer, addr);
 		}
 		else if(buffer[0] == PROPOSE) //---------------------------------------------
 		{
 			#ifdef NET_DEBUG
 			if(inet_ntop(AF_INET, &addr.sin_addr, (char*) buffer, 50) == NULL) continue;
-
 			#endif
+
 			recv_timeout(peer, &addr.sin_addr.s_addr, 4, MSG_WAITALL);
 			recv_timeout(peer, &addr.sin_port, 2, MSG_WAITALL);
+
 			#ifdef NET_DEBUG
 			printf("PROPOSE Request from %s to add ", buffer);
 			if(inet_ntop(AF_INET, &addr.sin_addr, (char*) buffer, 50) == NULL) continue;
 			printf("%s:%" PRIu16 "\n", buffer, ntohs(addr.sin_port));
 			#endif
+
 			proposeFulfill(peer, addr);
 		}
 		else if(buffer[0] == DISCONNECT) //------------------------------------------
 		{
+			#ifdef NET_DEBUG
+			inet_ntop(AF_INET, &addr.sin_addr, (char*)buffer, INET_ADDRSTRLEN+10);
+			fprintf(stderr, "DISCONNECT Req recv'd from %s:%" PRIu16 "\n", buffer, ntohs(addr.sin_port));
+			#endif
+
 			if(2 != recv_timeout(peer, &addr.sin_port, 2, MSG_WAITALL)) continue;
 			removePeer(addr);
 		}
@@ -1115,7 +1221,7 @@ void PeersChatNetwork::listen_on_tcp_thread()
 			buffer[1] = (uint8_t) name.length();
 			for(int i = 0; i < buffer[1]; ++i)
 				buffer[2 + i] = name[i];
-			send_timeout(peer, buffer, 2 + buffer[2], MSG_NOSIGNAL);
+			send_timeout(peer, buffer, 2 + buffer[1], MSG_NOSIGNAL);
 		} // ------------------------------------------------------------------------
 
 		// End Request

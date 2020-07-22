@@ -8,6 +8,7 @@
 #include <iostream>
 #include <opus.h>     // https://opus-codec.org/docs/opus_api-1.3.1/index.html
 #include <portaudio.h>// http://portaudio.com/docs/v19-doxydocs/
+#include <memory>
 
 #include "PC_Network.hpp"
 

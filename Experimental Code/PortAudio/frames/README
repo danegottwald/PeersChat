@@ -1,6 +1,0 @@
-The purpose of this program is to better understand the definition of what a frame
-is in the context of PortAudio.  It seems that a frame corresponds to a single sample.
-Simplified, if you have a sample rate of 48000, then PortAudio will give you 48000
-frames in a second.  This differs from the definition of frame in libopus which
-seems to be a collection of samples bundled together into a packet.  For example,
-a single libopus frame could be 480 PortAudio frames.

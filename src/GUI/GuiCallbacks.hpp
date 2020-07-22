@@ -74,6 +74,6 @@ void indirect_checkmark_callback(GtkWidget *widget);
 void volume_callback(GtkVolumeButton *v1, gdouble value);
 void leave_button_callback(GtkWidget *widget, gpointer data);
 
-#endif 
+#endif
 
 

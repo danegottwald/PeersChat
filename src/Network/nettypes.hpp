@@ -4,11 +4,11 @@
 /* NETCODES: An enum that contains all request= types. Requests are sent in
  * a one byte. Request types that contain data will have their left most bit
  * set to 1.
- * 
+ *
  * Format: [request type] [content length] [message...]
- * 
+ *
 */
-enum NETCODES { 
+enum NETCODES {
                 CONNECT=0x1,    // Request to connect to an existing call
                 SHARE=0x81,     // Share user info with host
                 SENDP=0x82,     // Share list of peers with joined user

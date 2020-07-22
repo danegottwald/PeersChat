@@ -106,6 +106,7 @@ static inline int close(int &x) { return closesocket(x); }
 #include <stdio.h>
 #include <errno.h>
 #include "nettypes.hpp"
+#include <PC_Gui.hpp>
 
 
 // Pre-Compiler Constants
@@ -115,16 +116,27 @@ static inline int close(int &x) { return closesocket(x); }
 
 
 // Globals
-	// Delay to give packets time to catch up and sort
+/*
+ * PACKET_DELAY adds artificial latency to allow out of order packets to catch up and
+ * reorder.  Make this too little and you'll miss packets.  Make it too big and you'll
+ * add too much latency.
+ *
+ * SOCKET_TIMEOUT adds a cap to sockets so that they don't waste time on dead peers.
+ * Make this too short and you might now give your peers enough time to respond.  Make
+ * this too long and the program will take longer to close and dead connections will
+ * stick around longer.
+ *
+ * PEER_TIMEOUT is a duration of time that if you haven't received audio from a peer
+ * for this long, then the peer will be disconnected.
+ *
+ * PORT is the port that this program will be using
+ *
+*/
 extern std::chrono::milliseconds PACKET_DELAY;
-	// Time to give threads time to end before forcing them to
-extern std::chrono::milliseconds PEERS_CHAT_DESTRUCT_TIMEOUT;
-	// How long it takes for a send/recv to timeout
 extern std::chrono::milliseconds SOCKET_TIMEOUT;
-	// Time to give PEER to send you audio before they timeout
 extern std::chrono::milliseconds PEER_TIMEOUT;
-	// Port Number to handle UDP/TCP
 extern uint16_t PORT;
+
 
 
 
@@ -237,10 +249,14 @@ class NPeer
 {
 	// Members
 private:
+		// Network
 	int tcp = -1;
 	static int udp;
 	sockaddr_in destination;
+		// Identification
 	char pname[MAX_NAME_LEN+1];
+	int ID;
+	bool muted = false;
 		// Audio Incoming
 	std::priority_queue<std::unique_ptr<AudioInPacket>,
 	                    std::vector<std::unique_ptr<AudioInPacket>>,
@@ -265,20 +281,23 @@ public:
 	NPeer(const sockaddr_in &addr) noexcept;
 	~NPeer() noexcept;
 
-	// Name
+	// Name/ID/Mute
 	std::string getName() noexcept;
 	bool setName(std::string name) noexcept;
+	inline int getID() noexcept { return this->ID; }
+	inline void setMute(bool x) noexcept { this->muted = x; }
+	inline bool getMute() noexcept { return this->muted; }
 
 
 	// Sending Audio -- All the functions you need to send audio
 	AudioOutPacket* getEmptyOutPacket() noexcept;
-	void enqueue_out(AudioOutPacket * &packet);
+	void enqueue_out(AudioOutPacket *packet);
 	void startNetStream() noexcept;
 	void stopNetStream() noexcept;
 
 	// Receiving Audio -- All the functions you need to receive audio
 	AudioInPacket* getEmptyInPacket() noexcept;
-	void retireEmptyInPacket(AudioInPacket * &packet) noexcept;
+	void retireEmptyInPacket(AudioInPacket *packet) noexcept;
 	void enqueue_in(AudioInPacket *packet);
 	AudioInPacket* getAudioInPacket() noexcept;
 	inline uint32_t getInPacketId() noexcept { return in_packet_id; }
@@ -291,13 +310,15 @@ private:
 	std::unique_ptr<std::thread> audio_out_thread;
 	static bool create_udp_socket() noexcept;
 	AudioOutPacket* getAudioOutPacket() noexcept;
-	void retireEmptyOutPacket(AudioOutPacket * &packet) noexcept;
+	void retireEmptyOutPacket(AudioOutPacket *packet) noexcept;
 	void send_audio_over_network_thread() noexcept;
 
 	// Connections over TCP
 	bool createTCP();
 	void destroyTCP();
 	inline sockaddr_in getDest() { return destination; }
+
+	static int id_counter;
 	friend class NPeerAttorney;
 };
 
@@ -314,6 +335,7 @@ class NPeerAttorney
 		return peer->getDest();
 	}
 	static inline int getUDP() { return NPeer::udp; }
+	static inline void destroyUDP() { if(NPeer::udp > 0) close(NPeer::udp); NPeer::udp = -1; }
 	static inline int getTCP(NPeer *peer) { return peer->tcp; }
 	friend class PeersChatNetwork;
 };
@@ -392,7 +414,7 @@ private:
 	std::mutex peers_lock;
 	int size = 0;
 	int tcp_listen = -1;
-	bool accept_direct_join = false;
+	bool accept_direct_join = true;
 	bool accept_indirect_join = true;
 	bool running = false;
 	std::unique_ptr<std::thread> listen_thread;
@@ -407,6 +429,8 @@ public:
 	NPeer* operator[](const int &x) noexcept;
 	NPeer* operator[](const std::string &x) noexcept;
 
+	NPeer* findID(const int &x) noexcept;
+
 	std::string getMyName() noexcept;
 	bool setMyName(const std::string&) noexcept;
 
@@ -415,6 +439,9 @@ public:
 	bool host() noexcept;
 	void disconnect() noexcept;
 	inline int getNumberPeers() { return this->size; }
+
+	inline void setIndirectJoin(bool x) noexcept { this->accept_indirect_join = x; }
+	inline void setDirectJoin(bool x) noexcept { this->accept_direct_join = x; }
 
 private:
 	bool start() noexcept;
